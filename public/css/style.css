@@ -722,3 +722,25 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   .modal { border-radius: var(--radius); margin: auto; }
   .modal-overlay { align-items: center; }
 }
+
+/* ── Status select dropdown (invoice list) ──────────────── */
+.status-select {
+  border: none;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  cursor: pointer;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: center;
+}
+
+.status-select.status-draft     { background:#f1f3f5; color:#6b7280; border:1px solid #e0e4e9; }
+.status-select.status-sent      { background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; }
+.status-select.status-paid      { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
+.status-select.status-overdue   { background:#fef2f2; color:#dc2626; border:1px solid #fecaca; }
+.status-select.status-cancelled { background:#f1f3f5; color:#6b7280; border:1px solid #e0e4e9; }

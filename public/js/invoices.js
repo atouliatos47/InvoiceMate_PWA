@@ -43,19 +43,25 @@ async function renderInvoiceList() {
 
 function renderInvoiceItems(invoices) {
   if (!invoices.length) {
-    return emptyState('📄', 'No invoices here', 'Create your first invoice to get started.', '+ New Invoice', 'openInvoiceForm()');
+    return emptyState(ICONS.invoice, 'No invoices here', 'Create your first invoice to get started.', '+ New Invoice', 'openInvoiceForm()');
   }
   return invoices.map(inv => `
     <div class="list-item" onclick="openInvoiceDetail(${inv.id})">
       <div class="list-item-left">
         <div class="item-title">${inv.invoice_number}</div>
         <div class="item-sub">
-          ${escHtml(inv.client_name || 'No client')} · ${fmtDate(inv.issue_date)}
+          ${escHtml(inv.client_name || 'No client')} &middot; ${fmtDate(inv.issue_date)}
         </div>
       </div>
-      <div class="list-item-right">
+      <div class="list-item-right" style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <div class="item-amount">${fmtMoney(inv.total)}</div>
-        <div class="mt-1">${badge(inv.status)}</div>
+        <select class="status-select status-${inv.status}"
+          onclick="event.stopPropagation()"
+          onchange="quickStatusChange(${inv.id}, this.value, this)">
+          ${['draft','sent','paid','overdue','cancelled'].map(s =>
+            `<option value="${s}" ${inv.status===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`
+          ).join('')}
+        </select>
       </div>
     </div>
   `).join('');
@@ -167,13 +173,16 @@ async function openInvoiceDetail(id) {
   }
 }
 
-async function quickStatusChange(id, status) {
+async function quickStatusChange(id, status, selectEl) {
   try {
     await API.patchStatus(id, status);
     showToast('Status updated', 'success');
-    // Refresh cached list
+    // Update dropdown colour immediately
+    if (selectEl) {
+      selectEl.className = `status-select status-${status}`;
+    }
+    // Update cached list
     App._invoices = await API.getInvoices();
-    if (App.currentView === 'invoices') renderInvoiceList();
     if (App.currentView === 'dashboard') renderDashboard();
   } catch (err) {
     showToast(err.message, 'error');
