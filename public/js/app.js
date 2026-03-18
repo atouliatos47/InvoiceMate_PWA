@@ -136,7 +136,7 @@ async function renderDashboard() {
       </div>
 
       ${recent.length === 0
-        ? emptyState(ICONS.invoice, 'No invoices yet', 'Create your first invoice to get started.', '+ New Invoice', "navigate('invoices')")
+        ? emptyState(ICONS.invoice, 'No invoices yet', 'Create your first invoice to get started.', '+ New Invoice', "navigate('invoices');setTimeout(openInvoiceForm,100)")
         : recent.map(inv => `
           <div class="list-item" onclick="openInvoiceDetail(${inv.id})">
             <div class="list-item-left">
@@ -147,14 +147,13 @@ async function renderDashboard() {
               <div class="item-amount">${fmtMoney(inv.total)}</div>
               <div class="mt-1">${badge(inv.status)}</div>
             </div>
-          </div>`).join('')
+          </div>`).join('') + `
+          <div style="margin-top:16px">
+            <button class="btn btn-primary btn-full" onclick="navigate('invoices');setTimeout(openInvoiceForm,100)">
+              + New Invoice
+            </button>
+          </div>`
       }
-
-      <div style="margin-top:16px">
-        <button class="btn btn-primary btn-full" onclick="navigate('invoices');setTimeout(openInvoiceForm,100)">
-          + New Invoice
-        </button>
-      </div>
     `;
   } catch (err) {
     el.innerHTML = `<div class="empty-state">
