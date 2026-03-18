@@ -746,6 +746,6 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .status-select.status-cancelled { background:#f1f3f5; color:#6b7280; border:1px solid #e0e4e9; }
 
 /* ── Extra bottom padding so buttons clear the nav bar ──── */
-#view-settings { padding-bottom: 32px; }
+#view-settings { padding-bottom: 80px; }
 #view-invoices { padding-bottom: 32px; }
 #view-clients  { padding-bottom: 32px; }
