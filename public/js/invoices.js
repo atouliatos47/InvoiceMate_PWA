@@ -113,6 +113,19 @@ async function openInvoiceDetail(id) {
         </select>
       </div>
 
+      <!-- From (owner) -->
+      ${(App.settings.company_name) ? `
+        <div class="card">
+          <div class="card-title" style="margin-bottom:10px">From</div>
+          <div style="font-size:0.9rem;line-height:1.8">
+            <strong>${escHtml(App.settings.company_name)}</strong><br>
+            ${App.settings.company_address ? escHtml(App.settings.company_address) + '<br>' : ''}
+            ${App.settings.company_email   ? `<a href="mailto:${escHtml(App.settings.company_email)}" style="color:var(--accent)">${escHtml(App.settings.company_email)}</a><br>` : ''}
+            ${App.settings.company_phone   ? escHtml(App.settings.company_phone) + '<br>' : ''}
+            ${App.settings.bank_name ? `<span style="color:var(--text-muted);font-size:0.82rem">Bank: ${escHtml(App.settings.bank_name)} &nbsp;|&nbsp; A/C: ${escHtml(App.settings.bank_account||'')} &nbsp;|&nbsp; Sort: ${escHtml(App.settings.bank_sort_code||'')}</span>` : ''}
+          </div>
+        </div>` : ''}
+
       <div class="card">
         ${row('Invoice No', inv.invoice_number)}
         ${row('Issue Date', fmtDate(inv.issue_date))}
