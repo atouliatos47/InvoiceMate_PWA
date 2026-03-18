@@ -10,7 +10,7 @@ async function renderSettings() {
     el.innerHTML = `
       <!-- Company -->
       <div class="settings-section">
-        <div class="settings-section-title">🏢 Company</div>
+        <div class="settings-section-title">Company</div>
         <div class="form-group">
           <label class="form-label">Company Name</label>
           <input class="form-control" id="s-company-name" value="${escHtml(s.company_name||'')}" placeholder="Your Company Ltd" />
@@ -33,7 +33,7 @@ async function renderSettings() {
 
       <!-- Invoice settings -->
       <div class="settings-section">
-        <div class="settings-section-title">🧾 Invoice</div>
+        <div class="settings-section-title">Invoice</div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Invoice Prefix</label>
@@ -56,7 +56,7 @@ async function renderSettings() {
 
       <!-- Currency & Tax -->
       <div class="settings-section">
-        <div class="settings-section-title">💷 Currency & Tax</div>
+        <div class="settings-section-title">Currency & Tax</div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Currency Code</label>
@@ -96,7 +96,7 @@ async function renderSettings() {
 
       <!-- Bank Details -->
       <div class="settings-section">
-        <div class="settings-section-title">🏦 Bank Details</div>
+        <div class="settings-section-title">Bank Details</div>
         <div class="form-group">
           <label class="form-label">Bank Name</label>
           <input class="form-control" id="s-bank-name" value="${escHtml(s.bank_name||'')}" placeholder="Barclays, HSBC…" />
@@ -114,7 +114,7 @@ async function renderSettings() {
       </div>
 
       <button class="btn btn-primary btn-full" onclick="saveSettings()" style="margin-bottom:24px">
-        💾 Save Settings
+        Save Settings
       </button>
     `;
   } catch (err) {

@@ -10,11 +10,11 @@ async function renderClientList() {
     el.innerHTML = `
       <div class="section-header">
         <div class="section-title">Clients</div>
-        <button class="btn btn-primary btn-sm" onclick="openClientForm()">＋ Add</button>
+        <button class="btn btn-primary btn-sm" onclick="openClientForm()">+ Add</button>
       </div>
 
       <div class="search-box">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
         <input type="text" id="client-search" placeholder="Search clients…" oninput="filterClients(this.value)" />
       </div>
 
@@ -32,7 +32,7 @@ async function renderClientList() {
 
 function renderClientItems(clients) {
   if (!clients.length) {
-    return emptyState('👥', 'No clients yet', 'Add your first client to get started.', '＋ Add Client', 'openClientForm()');
+    return emptyState('👥', 'No clients yet', 'Add your first client to get started.', '+ Add Client', 'openClientForm()');
   }
   return clients.map(c => `
     <div class="list-item" onclick="openClientDetail(${c.id})">
@@ -62,8 +62,8 @@ async function openClientDetail(id) {
 
   openModal(`
     <div class="action-row">
-      <button class="btn btn-outline btn-sm" onclick="openClientForm(${c.id})">✏️ Edit</button>
-      <button class="btn btn-danger btn-sm" onclick="confirmDeleteClient(${c.id}, '${escHtml(c.name)}')">🗑 Delete</button>
+      <button class="btn btn-outline btn-sm" onclick="openClientForm(${c.id})">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmDeleteClient(${c.id}, '${escHtml(c.name)}')">Delete</button>
     </div>
 
     <div class="card">

@@ -10,7 +10,7 @@ async function renderInvoiceList() {
     el.innerHTML = `
       <div class="section-header">
         <div class="section-title">Invoices</div>
-        <button class="btn btn-primary btn-sm" onclick="openInvoiceForm()">＋ New</button>
+        <button class="btn btn-primary btn-sm" onclick="openInvoiceForm()">+ New</button>
       </div>
 
       <div style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px">
@@ -22,7 +22,7 @@ async function renderInvoiceList() {
       </div>
 
       <div class="search-box">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
         <input type="text" id="inv-search" placeholder="Search invoices…"
           oninput="filterInvoices(App._invFilter || 'all', this.value)" />
       </div>
@@ -43,7 +43,7 @@ async function renderInvoiceList() {
 
 function renderInvoiceItems(invoices) {
   if (!invoices.length) {
-    return emptyState('📄', 'No invoices here', 'Create your first invoice to get started.', '＋ New Invoice', 'openInvoiceForm()');
+    return emptyState('📄', 'No invoices here', 'Create your first invoice to get started.', '+ New Invoice', 'openInvoiceForm()');
   }
   return invoices.map(inv => `
     <div class="list-item" onclick="openInvoiceDetail(${inv.id})">
@@ -92,8 +92,8 @@ async function openInvoiceDetail(id) {
       <div class="modal-title">${inv.invoice_number}</div>
 
       <div class="action-row">
-        <button class="btn btn-outline btn-sm" onclick="openInvoiceForm(${inv.id})">✏️ Edit</button>
-        <button class="btn btn-ghost btn-sm" onclick="generatePDF(${inv.id})">📄 PDF</button>
+        <button class="btn btn-outline btn-sm" onclick="openInvoiceForm(${inv.id})">Edit</button>
+        <button class="btn btn-ghost btn-sm" onclick="generatePDF(${inv.id})">PDF</button>
         <button class="btn btn-danger btn-sm" onclick="confirmDeleteInvoice(${inv.id}, '${escHtml(inv.invoice_number)}')">🗑</button>
       </div>
 
@@ -158,7 +158,7 @@ async function openInvoiceDetail(id) {
       ${inv.notes ? `<div class="card"><div class="card-title" style="margin-bottom:6px">Notes</div><div style="font-size:0.9rem;color:var(--text-muted)">${escHtml(inv.notes)}</div></div>` : ''}
 
       <div class="form-actions">
-        <button class="btn btn-primary btn-full" onclick="generatePDF(${inv.id})">📄 Download PDF</button>
+        <button class="btn btn-primary btn-full" onclick="generatePDF(${inv.id})">Download PDF</button>
       </div>
     `;
   } catch (err) {
@@ -269,7 +269,7 @@ async function openInvoiceForm(id = null) {
             ${items.map((it,i) => itemRow(i, it)).join('')}
           </tbody>
         </table>
-        <button class="btn btn-ghost btn-sm" onclick="addItemRow()" style="margin-top:6px">＋ Add Line</button>
+        <button class="btn btn-ghost btn-sm" onclick="addItemRow()" style="margin-top:6px">+ Add Line</button>
       </div>
 
       <!-- Totals -->

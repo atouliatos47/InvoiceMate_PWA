@@ -19,7 +19,6 @@ function openModal(html, title = '') {
   const content = document.getElementById('modal-content');
   content.innerHTML = (title ? `<div class="modal-title">${title}</div>` : '') + html;
   overlay.classList.remove('hidden');
-  // Prevent body scroll
   document.body.style.overflow = 'hidden';
 }
 
@@ -31,19 +30,13 @@ function closeModal() {
 
 /* ── Navigation ─────────────────────────────────────────── */
 function navigate(view) {
-  // Hide all views
   document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-  // Update nav buttons
   document.querySelectorAll('.nav-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.view === view);
   });
-  // Show target view
   const el = document.getElementById(`view-${view}`);
   if (el) el.classList.remove('hidden');
-
   App.currentView = view;
-
-  // Render the view
   switch (view) {
     case 'dashboard': renderDashboard(); break;
     case 'invoices':  renderInvoiceList(); break;
@@ -52,13 +45,12 @@ function navigate(view) {
   }
 }
 
-/* ── Format currency ────────────────────────────────────── */
+/* ── Formatters ─────────────────────────────────────────── */
 function fmtMoney(amount) {
   const sym = App.settings.currency_symbol || '£';
   return `${sym}${parseFloat(amount || 0).toFixed(2)}`;
 }
 
-/* ── Format date ────────────────────────────────────────── */
 function fmtDate(d) {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('en-GB', {
@@ -66,26 +58,31 @@ function fmtDate(d) {
   });
 }
 
-/* ── Status badge ───────────────────────────────────────── */
 function badge(status) {
   return `<span class="badge badge-${status}">${status}</span>`;
 }
 
-/* ── Loading spinner ────────────────────────────────────── */
 function spinner() {
   return `<div class="spinner"></div>`;
 }
 
-/* ── Empty state ────────────────────────────────────────── */
-function emptyState(icon, title, sub, btnLabel, btnAction) {
+/* ── Empty state (SVG icon, no emoji) ──────────────────── */
+function emptyState(svgPath, title, sub, btnLabel, btnAction) {
   return `
     <div class="empty-state">
-      <div class="empty-icon">${icon}</div>
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24"><path d="${svgPath}"/></svg>
+      </div>
       <div class="empty-title">${title}</div>
       <div class="empty-sub">${sub}</div>
       ${btnLabel ? `<button class="btn btn-primary" onclick="${btnAction}">${btnLabel}</button>` : ''}
     </div>`;
 }
+
+const ICONS = {
+  invoice: 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M16 13H8M16 17H8M10 9H8',
+  client:  'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75',
+};
 
 /* ── Dashboard ──────────────────────────────────────────── */
 async function renderDashboard() {
@@ -107,10 +104,10 @@ async function renderDashboard() {
     const recent    = invoices.slice(0, 5);
 
     el.innerHTML = `
-      <div class="section-header" style="margin-bottom:18px">
+      <div class="section-header" style="margin-bottom:20px">
         <div>
-          <div class="section-title">👋 Hello!</div>
-          <div class="text-muted">${settings.company_name || 'Set up your company in Settings'}</div>
+          <div class="section-title">${settings.company_name || 'Invoice Manager'}</div>
+          <div class="text-muted">${settings.company_email || 'Set up your company in Settings'}</div>
         </div>
       </div>
 
@@ -139,12 +136,12 @@ async function renderDashboard() {
       </div>
 
       ${recent.length === 0
-        ? emptyState('📄', 'No invoices yet', 'Create your first invoice to get started.', '+ New Invoice', "navigate('invoices')")
+        ? emptyState(ICONS.invoice, 'No invoices yet', 'Create your first invoice to get started.', '+ New Invoice', "navigate('invoices')")
         : recent.map(inv => `
           <div class="list-item" onclick="openInvoiceDetail(${inv.id})">
             <div class="list-item-left">
               <div class="item-title">${inv.invoice_number}</div>
-              <div class="item-sub">${inv.client_name || 'No client'} · ${fmtDate(inv.issue_date)}</div>
+              <div class="item-sub">${inv.client_name || 'No client'} &middot; ${fmtDate(inv.issue_date)}</div>
             </div>
             <div class="list-item-right">
               <div class="item-amount">${fmtMoney(inv.total)}</div>
@@ -155,23 +152,24 @@ async function renderDashboard() {
 
       <div style="margin-top:16px">
         <button class="btn btn-primary btn-full" onclick="navigate('invoices');setTimeout(openInvoiceForm,100)">
-          ＋ New Invoice
+          + New Invoice
         </button>
       </div>
     `;
   } catch (err) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-title">Failed to load dashboard</div><div class="text-muted">${err.message}</div></div>`;
+    el.innerHTML = `<div class="empty-state">
+      <div class="empty-title">Failed to load dashboard</div>
+      <div class="text-muted">${err.message}</div>
+    </div>`;
   }
 }
 
 /* ── Boot ───────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
-  // Nav click handlers
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => navigate(btn.dataset.view));
   });
 
-  // Modal close
   document.getElementById('modal-close').addEventListener('click', closeModal);
   document.getElementById('modal-overlay').addEventListener('click', e => {
     if (e.target === document.getElementById('modal-overlay')) closeModal();
@@ -193,16 +191,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     deferredPrompt = null;
   });
 
-  // Register service worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(console.error);
   }
 
-  // Load settings into global state
-  try {
-    App.settings = await API.getSettings();
-  } catch (_) {}
+  try { App.settings = await API.getSettings(); } catch (_) {}
 
-  // Start on dashboard
   navigate('dashboard');
 });
