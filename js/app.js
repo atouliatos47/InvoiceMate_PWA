@@ -6,7 +6,7 @@ const App = {
 
 // Shown small on the start screen, so it's easy to check which version a
 // device is running. Keep in step with CACHE_NAME in sw.js.
-const APP_VERSION = 'v11';   // keep in step with CACHE_NAME in sw.js
+const APP_VERSION = 'v12';   // keep in step with CACHE_NAME in sw.js
 
 /* ── Toast ──────────────────────────────────────────────── */
 function showToast(msg, type = '') {
@@ -135,7 +135,8 @@ async function renderDashboard() {
       <div class="section-header dash-head">
         <div class="dash-who">
           <div class="section-title">${escHtml(settings.company_name || 'Invoice Manager')}</div>
-          <div class="text-muted">${escHtml(settings.company_email || (settings.company_name ? '' : 'Add your details first — tap the person icon at the top'))}</div>
+          <!-- Just the name. The line underneath only shows before any details are filled in. -->
+          ${settings.company_name ? '' : '<div class="text-muted">Add your details first — tap the person icon at the top</div>'}
         </div>
         <button class="btn btn-primary dash-new" onclick="openInvoiceForm()">+ New Invoice</button>
       </div>
@@ -242,8 +243,9 @@ function layoutDashboardGrid() {
   grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
   grid.style.gridTemplateRows    = `repeat(${rows}, auto)`;
   grid.style.gridAutoFlow        = 'column';   // fill down each column first
-  grid.dataset.cols = cols;   // (handy for checking: how many columns are showing)
-  grid.dataset.rows = rows;
+  grid.dataset.cols = cols;   // (handy for checking: how many columns are showing,
+  grid.dataset.rows = rows;   //  and how many invoices fit before it has to scroll)
+  grid.dataset.fits = maxCols * fitRows;
 }
 
 // Window resized / phone turned: lay the columns out again.
