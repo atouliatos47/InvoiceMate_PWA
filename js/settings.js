@@ -39,7 +39,7 @@ async function renderSettings() {
         </div>
         <div class="form-group">
           <label class="form-label">Payment Terms / Default Notes</label>
-          <textarea class="form-control" id="s-payment-terms" placeholder="Payment due within 30 days.">${escHtml(s.payment_terms||'')}</textarea>
+          <textarea class="form-control" id="s-payment-terms" placeholder="Printed under Notes on new invoices — leave empty for none">${escHtml(s.payment_terms||'')}</textarea>
         </div>
         <div class="form-group">
           <label class="form-label">Additional Notes</label>

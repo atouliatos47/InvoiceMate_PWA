@@ -195,9 +195,9 @@ async function buildClassicPDF(inv, client, settings) {
   const rx = width / 2 + 20;
   let ry = mt - 115;
   page.drawText('INVOICE DETAILS', { x:rx, y:ry, size:8, font:fontB, color:accent }); ry -= 14;
+  // No Due Date — no payment deadline is printed on the invoice.
   const metaRows = [
     ['Issue Date', pdfDate(inv.issue_date)],
-    ['Due Date',   pdfDate(inv.due_date)],
     ['Status',     (inv.status||'draft').toUpperCase()]
   ];
   for (const [label, val] of metaRows) {
@@ -343,9 +343,7 @@ async function buildModernPDF(inv, client, settings) {
 
   page.drawText('ISSUED',         { x:20, y:sy, size:7, font:fontB, color:rgb(0.5,0.52,0.72) }); sy -= 12;
   page.drawText(pdfDate(inv.issue_date), { x:20, y:sy, size:9, font:fontR, color:white }); sy -= 22;
-
-  page.drawText('DUE',            { x:20, y:sy, size:7, font:fontB, color:rgb(0.5,0.52,0.72) }); sy -= 12;
-  page.drawText(pdfDate(inv.due_date),   { x:20, y:sy, size:9, font:fontR, color:white }); sy -= 22;
+  // (No DUE date here any more.)
 
   page.drawText('STATUS',         { x:20, y:sy, size:7, font:fontB, color:rgb(0.5,0.52,0.72) }); sy -= 12;
   page.drawText((inv.status||'draft').toUpperCase(), { x:20, y:sy, size:9, font:fontB, color:purple }); sy -= 24;
@@ -468,9 +466,9 @@ async function buildMinimalPDF(inv, client, settings) {
     if (l) { page.drawText(String(l), { x:ml, y, size:9, font:fontR, color:mid }); y -= 12; }
   }
 
-  // Dates — right
+  // Issue date — right (no Due Date any more)
   let ry = height - 60 - 18 - 14 - 24 - 20;
-  for (const [label, val] of [['Issue Date', pdfDate(inv.issue_date)], ['Due Date', pdfDate(inv.due_date)]]) {
+  for (const [label, val] of [['Issue Date', pdfDate(inv.issue_date)]]) {
     const vw = fontR.widthOfTextAtSize(val, 10);
     page.drawText(label, { x: mr-120, y:ry, size:8,  font:fontB, color:mid });
     page.drawText(val,   { x: mr-vw,  y:ry, size:10, font:fontR, color:ink });

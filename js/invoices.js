@@ -141,7 +141,6 @@ async function openInvoiceDetail(id) {
       <div class="card">
         ${row('Invoice No', inv.invoice_number)}
         ${row('Issue Date', fmtDate(inv.issue_date))}
-        ${row('Due Date',   fmtDate(inv.due_date))}
       </div>
 
       ${client.name ? `

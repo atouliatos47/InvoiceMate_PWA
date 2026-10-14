@@ -19,9 +19,13 @@ const STORE_KEY = 'invoicemate.data';
 
 // What a brand-new install starts with — the same defaults schema.sql
 // gave the settings row on the server.
+// The payment terms older versions filled in by themselves. Version 2 of
+// the data removes it (see Store.load) — invoices no longer say it.
+const OLD_DEFAULT_TERMS = 'Payment due within 30 days.';
+
 function defaultData() {
   return {
-    version: 1,
+    version: 2,
     settings: {
       company_name: '', company_email: '', company_phone: '',
       // Address split the way the Flutter app's My Details page has it:
@@ -38,7 +42,7 @@ function defaultData() {
       invoice_prefix: 'INV', next_invoice_no: 1,
       bank_name: '', bank_account: '', bank_sort_code: '',
       tax_number: '', self_assessment_no: '',
-      payment_terms: 'Payment due within 30 days.', notes: ''
+      payment_terms: '', notes: ''      // empty = no Notes on the invoice
     },
     clients: [],
     invoices: [],          // each invoice carries its own items array
@@ -62,7 +66,23 @@ const Store = {
     saved.clients  = saved.clients  || [];
     saved.invoices = saved.invoices || [];
     this._data = saved;
+    this._upgrade(saved);
     return this._data;
+  },
+
+  // One-time tidy-ups for data saved by an older version. Each runs once,
+  // then the data's version number goes up so it never runs again.
+  _upgrade(d) {
+    if (!(d.version >= 2)) {
+      // Take out the "Payment due within 30 days." the app used to add by
+      // itself. Only that exact sentence — anything typed is left alone.
+      if (d.settings.payment_terms === OLD_DEFAULT_TERMS) d.settings.payment_terms = '';
+      for (const inv of d.invoices) {
+        if ((inv.notes || '').trim() === OLD_DEFAULT_TERMS) inv.notes = '';
+      }
+      d.version = 2;
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(d)); } catch (_) {}
+    }
   },
 
   save() {

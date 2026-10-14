@@ -337,14 +337,14 @@ const IP = {
       client_id:       client ? client.id : null,
       client_snapshot: client || { name },
       issue_date:      issue,
-      // Not asked on this page (Flutter doesn't either): 30 days for a new
-      // invoice, unchanged when editing.
-      due_date:        inv ? inv.due_date : new Date(new Date(issue).getTime() + 30 * 864e5).toISOString().slice(0, 10),
+      // No due date — invoices don't carry a payment deadline.
+      due_date:        null,
       template:        inv ? inv.template : 'classic',
       billing_mode:    s.billing_mode,
       currency:        this.settings.currency || 'GBP',
       currency_symbol: this.settings.currency_symbol || '£',
       tax_rate:        parseFloat(s.tax_rate) || 0,
+      // Payment terms from Settings print under Notes — empty means nothing printed.
       notes:           inv ? inv.notes : (this.settings.payment_terms || ''),
       groups:          s.groups.map(g => ({ description: (g.description || '').trim(), entries: g.entries.map(e => ({ ...e })) })),
       expenses:        s.expenses.map(x => ({ description: (x.description || '').trim(), amount: x.amount }))
