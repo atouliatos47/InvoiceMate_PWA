@@ -1406,7 +1406,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .agm-bars span { position: relative; width: 29.5px; height: 83.4px; }
 .agm-bars i { position: absolute; bottom: 0; left: 8.3px; width: 12.9px; border-radius: 2px 2px 0 0; background: #2196F3; }
 .agm-bars em { position: absolute; top: 86.6px; left: 0; right: 0; text-align: center; font-style: normal; font-size: 9.5px; line-height: 9.6px; color: #424242; }
-.agm-tax { height: 88.3px; margin: 9.2px 9.7px 0 9.2px; padding: 0 9.9px 0 9.2px; background: #FFF3E0; border: 1.5px solid #FFCC80; border-radius: 10px; }
+.agm-tax { height: 103.3px; margin: 9.2px 9.7px 0 9.2px; padding: 0 9.9px 0 9.2px; background: #FFF3E0; border: 1.5px solid #FFCC80; border-radius: 10px; }
 .agm-tax .agm-chart-title { padding-top: 9.5px; margin-bottom: 7.7px; }
 .agm-tax > div { display: flex; justify-content: space-between; font-size: 11px; line-height: 15px; }
 

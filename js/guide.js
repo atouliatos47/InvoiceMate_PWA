@@ -83,19 +83,22 @@ const GUIDE_PAGES = [
     color: '#1976D2', title: 'Track Your Income',
     screen: () => `${gStatus()}${gBar('Income Tracker', true, '<b class="agm-year">2025</b>')}
       <div class="agm-two">
-        <div class="agm-card agm-stat"><span class="agm-stat-label" style="color:#2196F3">${gIcon('trend')}Total Income</span><b>£12,450.75</b><span>All invoices</span></div>
-        <div class="agm-card agm-stat"><span class="agm-stat-label" style="color:#4CAF50">${gIcon('money')}Paid Income</span><b>£9,875.50</b><span>Tax reportable</span></div>
+        <div class="agm-card agm-stat"><span class="agm-stat-label" style="color:#2196F3">${gIcon('trend')}Total Income</span><b>£28,450.75</b><span>All invoices</span></div>
+        <div class="agm-card agm-stat"><span class="agm-stat-label" style="color:#4CAF50">${gIcon('money')}Paid Income</span><b>£24,000.00</b><span>Tax reportable</span></div>
       </div>
       <div class="agm-card agm-chart">
         <b class="agm-chart-title">${gIcon('bars')}Monthly Income (2025)</b>
         <div class="agm-bars">${[21.3, 37.3, 29.7, 44.9, 40.7, 48.3, 33.9, 26.6].map((h, i) =>
           `<span><i style="height:${h}px"></i><em>${'JFMAMJJA'[i]}</em></span>`).join('')}</div>
       </div>
+      <!-- The app's own Tax Summary (js/stats.js): on £24,000 paid, Income Tax
+           20% after the £12,570 allowance = £2,286; National Insurance 6% = £685.80 -->
       <div class="agm-tax">
         <b class="agm-chart-title">${gIcon('bank')}Tax Summary (2025)</b>
-        <div><span>Taxable Income (Paid):</span><b style="color:#4CAF50">£9,875.50</b></div>
-        <div><span>Est. Income Tax (20%):</span><b style="color:#F44336">£1,975.10</b></div>
-        <div><span>Est. VAT (20%):</span><b style="color:#2196F3">£1,975.10</b></div>
+        <div><span>Taxable Income (Paid):</span><b style="color:#4CAF50">£24,000.00</b></div>
+        <div><span>Est. Income Tax:</span><b style="color:#F44336">£2,286.00</b></div>
+        <div><span>Est. National Insurance:</span><b style="color:#F44336">£685.80</b></div>
+        <div><span>VAT charged:</span><b style="color:#2196F3">£0.00</b></div>
       </div>`
   }
 ];
