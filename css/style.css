@@ -749,3 +749,46 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 #view-settings { padding-bottom: 80px; }
 #view-invoices { padding-bottom: 32px; }
 #view-clients  { padding-bottom: 32px; }
+
+/* ── Start screen + PIN lock ────────────────────────────────
+   Covers the whole app (above the toast at 300) until it's dismissed.
+   Background is the logo's own grey, so the logo has no visible edge
+   and Android's splash (manifest background_color) runs straight into it. */
+.start-screen {
+  position: fixed; inset: 0; z-index: 1000;
+  background: #c8cbd0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; padding: 24px;
+  transition: opacity 0.35s ease;
+}
+.start-screen.fade-out { opacity: 0; pointer-events: none; }
+.start-logo { width: min(60vmin, 320px); height: auto; }
+/* Smaller logo once the keypad needs the room */
+.start-screen.locked .start-logo { width: min(36vmin, 200px); }
+
+.lock-panel { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.lock-title { color: #25325c; font-weight: 600; font-size: 1.05rem; text-align: center; }
+.pin-dots { display: flex; gap: 14px; height: 16px; }
+.pin-dots span {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid #25325c; background: transparent;
+}
+.pin-dots span.filled { background: #25325c; }
+.pin-dots.shake { animation: pin-shake 0.35s; }
+@keyframes pin-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); } 75% { transform: translateX(8px); }
+}
+.pin-pad { display: grid; grid-template-columns: repeat(3, 72px); gap: 12px; }
+.pin-pad button {
+  width: 72px; height: 72px; border-radius: 50%; border: none;
+  background: rgba(255,255,255,0.55); color: #25325c;
+  font-size: 1.6rem; font-weight: 600; cursor: pointer; font-family: var(--font);
+}
+.pin-pad button:active { background: #fff; }
+.pin-pad button.pin-text { background: transparent; font-size: 0.85rem; font-weight: 600; }
+.pin-pad button.pin-text[data-key="back"] { font-size: 1.4rem; }
+
+/* ── Settings: Security + Backup rows ───────────────────── */
+.settings-note { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5; }
+.settings-actions { display: flex; gap: 10px; flex-wrap: wrap; }

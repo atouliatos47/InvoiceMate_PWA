@@ -100,6 +100,7 @@ async function openInvoiceDetail(id) {
       <div class="action-row">
         <button class="btn btn-outline btn-sm" onclick="openInvoiceForm(${inv.id})">Edit</button>
         <button class="btn btn-ghost btn-sm" onclick="generatePDF(${inv.id})">PDF</button>
+        <button class="btn btn-ghost btn-sm" onclick="sharePDF(${inv.id})">Share</button>
         <button class="btn btn-danger btn-sm" onclick="confirmDeleteInvoice(${inv.id}, '${escHtml(inv.invoice_number)}')">🗑</button>
       </div>
 
@@ -177,7 +178,8 @@ async function openInvoiceDetail(id) {
       ${inv.notes ? `<div class="card"><div class="card-title" style="margin-bottom:6px">Notes</div><div style="font-size:0.9rem;color:var(--text-muted)">${escHtml(inv.notes)}</div></div>` : ''}
 
       <div class="form-actions">
-        <button class="btn btn-primary btn-full" onclick="generatePDF(${inv.id})">Download PDF</button>
+        <button class="btn btn-outline btn-full" onclick="generatePDF(${inv.id})">Download PDF</button>
+        <button class="btn btn-primary btn-full" onclick="sharePDF(${inv.id})">Share PDF</button>
       </div>
     `;
   } catch (err) {

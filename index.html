@@ -9,9 +9,31 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>InvoiceMate</title>
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+
+  <!-- ── Start screen ──────────────────────────────────────
+       First thing on screen every time the app opens: the InvoiceMate
+       logo from the Flutter app, on the logo's own grey (the same grey
+       Android's splash uses, from manifest.json, so the two run into
+       each other). With no PIN set it fades out on its own; with a PIN
+       set the keypad below appears and it waits. See js/lock.js. -->
+  <div id="start-screen" class="start-screen">
+    <img src="icons/icon-512.png" alt="InvoiceMate" class="start-logo" />
+    <div id="lock-panel" class="lock-panel hidden">
+      <div class="lock-title" id="lock-title">Enter your PIN</div>
+      <div class="pin-dots" id="pin-dots"></div>
+      <div class="pin-pad" id="pin-pad">
+        <button data-key="1">1</button><button data-key="2">2</button><button data-key="3">3</button>
+        <button data-key="4">4</button><button data-key="5">5</button><button data-key="6">6</button>
+        <button data-key="7">7</button><button data-key="8">8</button><button data-key="9">9</button>
+        <button data-key="forgot" class="pin-text">Forgot?</button><button data-key="0">0</button><button data-key="back" class="pin-text">&#x232B;</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ── Top bar ─────────────────────────────────────────── -->
   <header class="topbar">
@@ -71,6 +93,8 @@
   <!-- ── Scripts ──────────────────────────────────────────── -->
   <script src="js/vendor/pdf-lib.min.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/lock.js"></script>
+  <script src="js/backup.js"></script>
   <script src="js/settings.js"></script>
   <script src="js/clients.js"></script>
   <script src="js/invoices.js"></script>

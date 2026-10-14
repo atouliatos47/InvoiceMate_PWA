@@ -194,7 +194,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     navigator.serviceWorker.register('sw.js').catch(console.error);
   }
 
+  // All the data lives in this browser's storage. Asking for "persistent"
+  // storage tells Chrome not to clear it to free up space. (Installed apps
+  // usually get this automatically; it's a no-op where unsupported.)
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().catch(() => {});
+  }
+
   try { App.settings = await API.getSettings(); } catch (_) {}
 
   navigate('dashboard');
+  // Start screen: logo, then the PIN keypad if a PIN is set (js/lock.js).
+  // The dashboard is already drawn underneath, so it's ready the moment
+  // the start screen goes.
+  Lock.start();
 });

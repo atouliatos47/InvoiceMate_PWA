@@ -116,6 +116,35 @@ async function renderSettings() {
       <button class="btn btn-primary btn-full" onclick="saveSettings()" style="margin-bottom:24px">
         Save Settings
       </button>
+
+      <!-- App lock (js/lock.js) — acts straight away, no Save needed -->
+      <div class="settings-section">
+        <div class="settings-section-title">App Lock</div>
+        ${Lock.isOn() ? `
+          <div class="settings-note">On — the app asks for your PIN when it opens, and again after a minute in the background.</div>
+          <div class="settings-actions">
+            <button class="btn btn-outline btn-sm" onclick="Lock.changePin()">Change PIN</button>
+            <button class="btn btn-ghost btn-sm" onclick="Lock.turnOff()">Turn off</button>
+          </div>` : `
+          <div class="settings-note">Off — anyone holding the device can open the app.</div>
+          <div class="settings-actions">
+            <button class="btn btn-outline btn-sm" onclick="Lock.setPin()">Set a PIN</button>
+          </div>`}
+      </div>
+
+      <!-- Backup (js/backup.js) -->
+      <div class="settings-section">
+        <div class="settings-section-title">Backup</div>
+        <div class="settings-note">
+          Everything is stored on this device only. Save a backup file now and then and keep it
+          somewhere safe — email it to yourself or put it on Google Drive.<br>
+          Last backup: <strong>${Backup.lastBackupDate() ? fmtDate(Backup.lastBackupDate()) : 'never'}</strong>
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-outline btn-sm" onclick="Backup.export()">Save backup file</button>
+          <button class="btn btn-ghost btn-sm" onclick="Backup.pickFile()">Restore from backup</button>
+        </div>
+      </div>
     `;
   } catch (err) {
     el.innerHTML = `<div class="empty-state">

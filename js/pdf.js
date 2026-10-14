@@ -1,26 +1,81 @@
 /* ── PDF Generation (pdf-lib) ───────────────────────────── */
 
+/* ── Text safety ────────────────────────────────────────────
+   The PDFs use pdf-lib's built-in Helvetica, which can only print the
+   basic Western character set ("WinAnsi"). Anything outside it — a line
+   break, an emoji, Greek letters — used to throw an error, so the whole
+   PDF failed ("PDF generation failed"). In practice that meant a business
+   address typed over several lines in Settings broke EVERY PDF, and the
+   Modern template never worked at all (it drew a ⚡ emoji).
+
+   So every piece of text is cleaned on its way in: line breaks become
+   ", " (each template lays the address out as one line) and any character
+   the font can't print becomes "?". Done once, here, by wrapping pdf-lib's
+   own drawText / widthOfTextAtSize — so no template can forget to do it. */
+const WINANSI_EXTRAS = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
+function pdfSafe(text) {
+  return String(text ?? '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/\s*\n+\s*/g, ', ')
+    .replace(/\t/g, ' ')
+    .replace(/[^\x20-\x7E\xA0-\xFF]/g, ch => (WINANSI_EXTRAS.includes(ch) ? ch : '?'));
+}
+(function guardPdfText() {
+  const page = PDFLib.PDFPage.prototype;
+  const font = PDFLib.PDFFont.prototype;
+  const drawText = page.drawText;
+  const widthOf  = font.widthOfTextAtSize;
+  page.drawText = function (text, options) { return drawText.call(this, pdfSafe(text), options); };
+  font.widthOfTextAtSize = function (text, size) { return widthOf.call(this, pdfSafe(text), size); };
+})();
+
+/* ── Build / download / share ───────────────────────────── */
+async function buildInvoicePDF(invoiceId) {
+  const inv = await API.getInvoice(invoiceId);
+  const settings = await API.getSettings();
+  const client = inv.client_snapshot
+    ? (typeof inv.client_snapshot === 'string' ? JSON.parse(inv.client_snapshot) : inv.client_snapshot)
+    : {};
+
+  const template = inv.template || 'classic';
+  let bytes;
+  if (template === 'modern')       bytes = await buildModernPDF(inv, client, settings);
+  else if (template === 'minimal') bytes = await buildMinimalPDF(inv, client, settings);
+  else                             bytes = await buildClassicPDF(inv, client, settings);
+
+  return { bytes, filename: `${inv.invoice_number}.pdf`, inv };
+}
+
 async function generatePDF(invoiceId) {
   showToast('Generating PDF…');
   try {
-    const inv = await API.getInvoice(invoiceId);
-    const settings = App.settings.currency ? App.settings : await API.getSettings();
-    const client = inv.client_snapshot
-      ? (typeof inv.client_snapshot === 'string' ? JSON.parse(inv.client_snapshot) : inv.client_snapshot)
-      : {};
-
-    const template = inv.template || 'classic';
-    let pdfBytes;
-
-    if (template === 'modern')  pdfBytes = await buildModernPDF(inv, client, settings);
-    else if (template === 'minimal') pdfBytes = await buildMinimalPDF(inv, client, settings);
-    else pdfBytes = await buildClassicPDF(inv, client, settings);
-
-    downloadPDF(pdfBytes, `${inv.invoice_number}.pdf`);
+    const { bytes, filename } = await buildInvoicePDF(invoiceId);
+    downloadPDF(bytes, filename);
     showToast('PDF downloaded', 'success');
   } catch (err) {
     console.error(err);
     showToast('PDF generation failed', 'error');
+  }
+}
+
+// Android's share sheet — WhatsApp, Gmail, Drive, etc. — like the Flutter
+// app's Share button (its share_plus package). Where a browser can't share
+// files, it falls back to downloading the PDF instead.
+async function sharePDF(invoiceId) {
+  showToast('Preparing PDF…');
+  try {
+    const { bytes, filename, inv } = await buildInvoicePDF(invoiceId);
+    const file = new File([bytes], filename, { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: filename, text: `Invoice ${inv.invoice_number}` });
+    } else {
+      downloadPDF(bytes, filename);
+      showToast("Sharing isn't available here — PDF downloaded instead");
+    }
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;   // closed the share sheet
+    console.error(err);
+    showToast('Could not share the PDF', 'error');
   }
 }
 
@@ -30,8 +85,11 @@ function downloadPDF(bytes, filename) {
   const a    = document.createElement('a');
   a.href     = url;
   a.download = filename;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  // Revoking straight away can cancel the download on some phones.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /* ── Shared helpers ─────────────────────────────────────── */
@@ -44,17 +102,23 @@ function pdfDate(d) {
   return new Date(d).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
 }
 
+// Breaks text into lines that fit maxWidth. Line breaks the user typed
+// (e.g. in the Notes box) are kept as real new lines.
 function wrapText(text, maxWidth, fontSize, font) {
-  const words = String(text || '').split(' ');
   const lines = [];
-  let current = '';
-  for (const word of words) {
-    const test = current ? `${current} ${word}` : word;
-    const w = font.widthOfTextAtSize(test, fontSize);
-    if (w > maxWidth && current) { lines.push(current); current = word; }
-    else current = test;
+  for (const para of String(text || '').replace(/\r\n?/g, '\n').split('\n')) {
+    const words = para.split(' ');
+    let current = '';
+    for (const word of words) {
+      const test = current ? `${current} ${word}` : word;
+      const w = font.widthOfTextAtSize(test, fontSize);
+      if (w > maxWidth && current) { lines.push(current); current = word; }
+      else current = test;
+    }
+    lines.push(current);
   }
-  if (current) lines.push(current);
+  // Drop empty lines at the very end, keep blank lines in the middle.
+  while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
   return lines;
 }
 
@@ -171,7 +235,9 @@ async function buildClassicPDF(inv, client, settings) {
     page.drawText(val,       { x: mr-vw,  y, size:10, font:fontR, color:black });
     y -= 14;
   }
-  // Total row
+  // Total row — the extra 8pt gap stops the bar sitting on top of the VAT
+  // line above it (its top edge used to cut through the VAT figures).
+  y -= 8;
   page.drawRectangle({ x: mr-160, y:y-6, width:160, height:22, color:navy });
   page.drawText('TOTAL', { x: mr-154, y:y+2, size:10, font:fontB, color:white });
   const tw = fontB.widthOfTextAtSize(money(inv.total, sym), 11);
@@ -233,11 +299,23 @@ async function buildModernPDF(inv, client, settings) {
 
   // Sidebar content
   let sy = height - 48;
-  page.drawText('⚡', { x:20, y:sy, size:20, font:fontB, color:purple }); sy -= 30;
-  page.drawText(settings.company_name || 'Company', { x:20, y:sy, size:11, font:fontB, color:white, maxWidth:sideW-24 }); sy -= 16;
-  if (settings.company_email)   { page.drawText(settings.company_email,   { x:20, y:sy, size:8, font:fontR, color:rgb(0.6,0.62,0.75), maxWidth:sideW-24 }); sy -= 12; }
-  if (settings.company_phone)   { page.drawText(settings.company_phone,   { x:20, y:sy, size:8, font:fontR, color:rgb(0.6,0.62,0.75), maxWidth:sideW-24 }); sy -= 12; }
-  if (settings.company_address) { page.drawText(settings.company_address, { x:20, y:sy, size:8, font:fontR, color:rgb(0.6,0.62,0.75), maxWidth:sideW-24 }); sy -= 12; }
+  // A short accent bar where a ⚡ emoji used to be drawn. Helvetica can't
+  // print emoji, so that one line made the Modern template fail every time.
+  page.drawRectangle({ x:20, y:sy + 4, width:28, height:4, color:purple }); sy -= 26;
+  // Name and address wrapped onto as many lines as they need, each line
+  // moving the next item down — maxWidth alone wrapped them on top of
+  // whatever came next.
+  const sideText = (text, size, font, color) => {
+    for (const line of wrapText(pdfSafe(text), sideW - 24, size, font)) {
+      page.drawText(line, { x:20, y:sy, size, font, color });
+      sy -= size + 4;
+    }
+  };
+  sideText(settings.company_name || 'Company', 11, fontB, white); sy -= 1;
+  const sideGrey = rgb(0.6, 0.62, 0.75);
+  if (settings.company_email)   sideText(settings.company_email,   8, fontR, sideGrey);
+  if (settings.company_phone)   sideText(settings.company_phone,   8, fontR, sideGrey);
+  if (settings.company_address) sideText(settings.company_address, 8, fontR, sideGrey);
 
   sy -= 24;
   page.drawLine({ start:{x:20,y:sy}, end:{x:sideW-16,y:sy}, thickness:0.5, color:rgb(0.25,0.27,0.40) }); sy -= 20;
