@@ -46,9 +46,32 @@ function navigate(view) {
 }
 
 /* ── Formatters ─────────────────────────────────────────── */
+// One money format for the whole app, screens and PDFs alike, with
+// thousands separators the way the Flutter app shows money: £1,234.56.
+// Text symbols like "CHF" or "kr" get a space: CHF 1,234.56.
+function formatMoney(amount, sym = '£') {
+  const n = (parseFloat(amount) || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return /^[A-Za-z]/.test(sym) ? `${sym} ${n}` : `${sym}${n}`;
+}
+
 function fmtMoney(amount) {
-  const sym = App.settings.currency_symbol || '£';
-  return `${sym}${parseFloat(amount || 0).toFixed(2)}`;
+  return formatMoney(amount, App.settings.currency_symbol || '£');
+}
+
+// The owner's address as one line: street, city, postcode (My Details
+// keeps them separately, like the Flutter app).
+function companyAddressLine(s) {
+  return [s.company_address, s.company_city, s.company_postcode]
+    .map(x => String(x || '').trim()).filter(Boolean).join(', ');
+}
+
+// Column names for line items. Bill by the Hour → Hours / Rate,
+// Bill by Quantity → Qty / Unit Price. Invoices made before the setting
+// existed have no billing_mode and keep their original Qty / Unit Price.
+function unitLabels(mode) {
+  return mode === 'hourly'
+    ? { qty: 'Hours', price: 'Rate', priceShort: 'Rate' }
+    : { qty: 'Qty',   price: 'Unit Price', priceShort: 'Price' };
 }
 
 function fmtDate(d) {

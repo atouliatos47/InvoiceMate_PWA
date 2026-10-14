@@ -23,12 +23,19 @@ function defaultData() {
   return {
     version: 1,
     settings: {
-      company_name: '', company_address: '', company_email: '', company_phone: '',
+      company_name: '', company_email: '', company_phone: '',
+      // Address split the way the Flutter app's My Details page has it:
+      // company_address is the street part, then city and postcode.
+      company_address: '', company_city: '', company_postcode: '',
       company_logo_url: null,
+      // 'hourly' = Bill by the Hour (Hours / Rate columns),
+      // 'quantity' = Bill by Quantity (Qty / Unit Price columns).
+      invoice_mode: 'hourly',
       currency: 'GBP', currency_symbol: '£',
       tax_rate: 20, tax_name: 'VAT',
       invoice_prefix: 'INV', next_invoice_no: 1,
       bank_name: '', bank_account: '', bank_sort_code: '',
+      tax_number: '', self_assessment_no: '',
       payment_terms: 'Payment due within 30 days.', notes: ''
     },
     clients: [],
@@ -208,6 +215,10 @@ const API = {
       issue_date:      body.issue_date || new Date().toISOString().slice(0, 10),
       due_date:        body.due_date || null,
       template:        body.template || 'classic',
+      // Hours/Rate or Qty/Unit Price — taken from My Details when the
+      // invoice is made and kept with it, so changing the setting later
+      // doesn't relabel invoices that were already sent.
+      billing_mode:    body.billing_mode || s.invoice_mode || 'quantity',
       currency:        body.currency || 'GBP',
       currency_symbol: body.currency_symbol || '£',
       tax_rate:        Number(body.tax_rate) || 0,

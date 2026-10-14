@@ -32,7 +32,11 @@ function pdfSafe(text) {
 /* ── Build / download / share ───────────────────────────── */
 async function buildInvoicePDF(invoiceId) {
   const inv = await API.getInvoice(invoiceId);
-  const settings = await API.getSettings();
+  const saved = await API.getSettings();
+  // My Details keeps street, city and postcode apart (like the Flutter
+  // app); the templates print the address as one line, so join them here
+  // once and every template gets the full address.
+  const settings = { ...saved, company_address: companyAddressLine(saved) };
   const client = inv.client_snapshot
     ? (typeof inv.client_snapshot === 'string' ? JSON.parse(inv.client_snapshot) : inv.client_snapshot)
     : {};
@@ -93,8 +97,22 @@ function downloadPDF(bytes, filename) {
 }
 
 /* ── Shared helpers ─────────────────────────────────────── */
+// Same format as the screens (formatMoney in app.js): £1,234.56
 function money(amount, sym = '£') {
-  return `${sym}${parseFloat(amount || 0).toFixed(2)}`;
+  return formatMoney(amount, sym);
+}
+
+// Bank and tax lines for the "Payment details" block, shared by all three
+// templates. The tax lines come from My Details → Tax Information and
+// only appear when filled in.
+function paymentLines(settings, accountLabel = 'Account') {
+  return [
+    settings.bank_name          ? `Bank: ${settings.bank_name}`                         : null,
+    settings.bank_account       ? `${accountLabel}: ${settings.bank_account}`           : null,
+    settings.bank_sort_code     ? `Sort Code: ${settings.bank_sort_code}`               : null,
+    settings.tax_number         ? `Tax No: ${settings.tax_number}`                      : null,
+    settings.self_assessment_no ? `Self Assessment No: ${settings.self_assessment_no}`  : null
+  ].filter(Boolean);
 }
 
 function pdfDate(d) {
@@ -197,9 +215,10 @@ async function buildClassicPDF(inv, client, settings) {
   // ── Items table header ──
   page.drawRectangle({ x:ml, y:y-4, width: mr-ml, height:20, color:navy });
   const cols = [ml+4, ml+220, ml+290, ml+360, mr-4];
+  const head = unitLabels(inv.billing_mode);   // Hours / Rate or Qty / Unit Price
   page.drawText('Description', { x:cols[0], y:y+3, size:8, font:fontB, color:white });
-  page.drawText('Qty',         { x:cols[1], y:y+3, size:8, font:fontB, color:white });
-  page.drawText('Unit Price',  { x:cols[2], y:y+3, size:8, font:fontB, color:white });
+  page.drawText(head.qty,      { x:cols[1], y:y+3, size:8, font:fontB, color:white });
+  page.drawText(head.price,    { x:cols[2], y:y+3, size:8, font:fontB, color:white });
   page.drawText('Total',       { x:cols[3], y:y+3, size:8, font:fontB, color:white });
   y -= 20;
 
@@ -244,12 +263,11 @@ async function buildClassicPDF(inv, client, settings) {
   page.drawText(money(inv.total, sym), { x: mr-tw-4, y:y+2, size:11, font:fontB, color:white });
   y -= 36;
 
-  // ── Bank details ──
-  if (settings.bank_name || settings.bank_account) {
+  // ── Bank + tax details ──
+  const payLines = paymentLines(settings);
+  if (payLines.length) {
     page.drawText('PAYMENT DETAILS', { x:ml, y, size:8, font:fontB, color:accent }); y -= 12;
-    if (settings.bank_name)     { page.drawText(`Bank: ${settings.bank_name}`,          { x:ml, y, size:9, font:fontR, color:grey }); y -= 12; }
-    if (settings.bank_account)  { page.drawText(`Account: ${settings.bank_account}`,    { x:ml, y, size:9, font:fontR, color:grey }); y -= 12; }
-    if (settings.bank_sort_code){ page.drawText(`Sort Code: ${settings.bank_sort_code}`,{ x:ml, y, size:9, font:fontR, color:grey }); y -= 12; }
+    for (const l of payLines) { page.drawText(l, { x:ml, y, size:9, font:fontR, color:grey }); y -= 12; }
     y -= 6;
   }
 
@@ -354,9 +372,10 @@ async function buildModernPDF(inv, client, settings) {
   // ── Table header ──
   page.drawRectangle({ x:mx, y:y-4, width:mw, height:20, color:purple });
   const c = [mx+4, mx+140, mx+190, mx+240, mx+mw-4];
-  page.drawText('Description', { x:c[0], y:y+3, size:8, font:fontB, color:white });
-  page.drawText('Qty',         { x:c[1], y:y+3, size:8, font:fontB, color:white });
-  page.drawText('Price',       { x:c[2], y:y+3, size:8, font:fontB, color:white });
+  const head = unitLabels(inv.billing_mode);   // Hours / Rate or Qty / Price
+  page.drawText('Description',   { x:c[0], y:y+3, size:8, font:fontB, color:white });
+  page.drawText(head.qty,        { x:c[1], y:y+3, size:8, font:fontB, color:white });
+  page.drawText(head.priceShort, { x:c[2], y:y+3, size:8, font:fontB, color:white });
   page.drawText('Total',       { x:c[3], y:y+3, size:8, font:fontB, color:white });
   y -= 22;
 
@@ -385,17 +404,13 @@ async function buildModernPDF(inv, client, settings) {
 
   y -= 20;
 
-  // Notes / bank
-  if (settings.bank_name || inv.notes) {
+  // Notes / bank + tax
+  const payLines = paymentLines(settings);
+  if (payLines.length || inv.notes) {
     page.drawLine({ start:{x:mx,y}, end:{x:mx+mw,y}, thickness:0.5, color:light }); y -= 14;
-    if (settings.bank_name) {
+    if (payLines.length) {
       page.drawText('PAYMENT', { x:mx, y, size:7, font:fontB, color:purple }); y -= 12;
-      const bankLines = [
-        settings.bank_name     ? `Bank: ${settings.bank_name}`          : null,
-        settings.bank_account  ? `Account: ${settings.bank_account}`    : null,
-        settings.bank_sort_code? `Sort Code: ${settings.bank_sort_code}`: null
-      ].filter(Boolean);
-      for (const l of bankLines) { page.drawText(l, { x:mx, y, size:9, font:fontR, color:grey }); y -= 12; }
+      for (const l of payLines) { page.drawText(l, { x:mx, y, size:9, font:fontR, color:grey }); y -= 12; }
       y -= 8;
     }
     if (inv.notes) {
@@ -466,9 +481,10 @@ async function buildMinimalPDF(inv, client, settings) {
   page.drawLine({ start:{x:ml,y}, end:{x:mr,y}, thickness:0.5, color:light }); y -= 18;
 
   // ── Items ──
-  page.drawText('Description', { x:ml,      y, size:8, font:fontB, color:mid });
-  page.drawText('Qty',         { x:ml+230,  y, size:8, font:fontB, color:mid });
-  page.drawText('Price',       { x:ml+285,  y, size:8, font:fontB, color:mid });
+  const head = unitLabels(inv.billing_mode);   // Hours / Rate or Qty / Price
+  page.drawText('Description',   { x:ml,      y, size:8, font:fontB, color:mid });
+  page.drawText(head.qty,        { x:ml+230,  y, size:8, font:fontB, color:mid });
+  page.drawText(head.priceShort, { x:ml+285,  y, size:8, font:fontB, color:mid });
   const thw = fontB.widthOfTextAtSize('Amount', 8);
   page.drawText('Amount',      { x: mr-thw, y, size:8, font:fontB, color:mid });
   y -= 10;
@@ -505,14 +521,11 @@ async function buildMinimalPDF(inv, client, settings) {
 
   y -= 20;
 
-  // Bank / notes
-  if (settings.bank_name) {
+  // Bank + tax / notes
+  const payLines = paymentLines(settings, 'Account No');
+  if (payLines.length) {
     page.drawText('Payment Details', { x:ml, y, size:8, font:fontB, color:mid }); y -= 13;
-    for (const l of [
-      settings.bank_name      ? `Bank: ${settings.bank_name}`           : null,
-      settings.bank_account   ? `Account No: ${settings.bank_account}`  : null,
-      settings.bank_sort_code ? `Sort Code: ${settings.bank_sort_code}` : null
-    ].filter(Boolean)) {
+    for (const l of payLines) {
       page.drawText(l, { x:ml, y, size:9, font:fontR, color:mid }); y -= 12;
     }
     y -= 8;

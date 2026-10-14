@@ -1,4 +1,9 @@
-/* ── Settings View ──────────────────────────────────────── */
+/* ── Settings View ────────────────────────────────────────
+   Business name, address, currency and bank details now live on the
+   My Details page (js/details.js), laid out like the Flutter app's.
+   Settings keeps the rest: invoice numbering and notes, VAT, App Lock
+   and Backup.
+──────────────────────────────────────────────────────────── */
 async function renderSettings() {
   const el = document.getElementById('view-settings');
   el.innerHTML = spinner();
@@ -6,29 +11,20 @@ async function renderSettings() {
   try {
     const s = await API.getSettings();
     App.settings = s;
+    // 0 is a real VAT rate (not VAT registered), so only fall back to 20
+    // when there's no number at all — "s.tax_rate || 20" turned 0 into 20.
+    const taxRate = Number.isFinite(Number(s.tax_rate)) && s.tax_rate !== '' && s.tax_rate !== null ? Number(s.tax_rate) : 20;
 
     el.innerHTML = `
-      <!-- Company -->
-      <div class="settings-section">
-        <div class="settings-section-title">Company</div>
-        <div class="form-group">
-          <label class="form-label">Company Name</label>
-          <input class="form-control" id="s-company-name" value="${escHtml(s.company_name||'')}" placeholder="Your Company Ltd" />
+      <!-- Shortcut to My Details -->
+      <div class="settings-section" onclick="MyDetails.open()" style="cursor:pointer">
+        <div class="settings-section-title">My Details</div>
+        <div class="settings-note" style="margin-bottom:8px">
+          ${s.company_name
+            ? `<strong>${escHtml(s.company_name)}</strong>${companyAddressLine(s) ? '<br>' + escHtml(companyAddressLine(s)) : ''}`
+            : 'Not filled in yet — your business, address, currency, bank and tax details go here. They are printed on every invoice.'}
         </div>
-        <div class="form-group">
-          <label class="form-label">Address</label>
-          <textarea class="form-control" id="s-company-address" placeholder="Street, City, Postcode">${escHtml(s.company_address||'')}</textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Email</label>
-            <input class="form-control" id="s-company-email" type="email" value="${escHtml(s.company_email||'')}" placeholder="you@example.com" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Phone</label>
-            <input class="form-control" id="s-company-phone" type="tel" value="${escHtml(s.company_phone||'')}" placeholder="+44…" />
-          </div>
-        </div>
+        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); MyDetails.open()">Open My Details</button>
       </div>
 
       <!-- Invoice settings -->
@@ -54,34 +50,9 @@ async function renderSettings() {
         </div>
       </div>
 
-      <!-- Currency & Tax -->
+      <!-- Tax -->
       <div class="settings-section">
-        <div class="settings-section-title">Currency & Tax</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Currency Code</label>
-            <select class="form-control" id="s-currency" onchange="updateSymbol()">
-              ${[
-                ['GBP','£','GBP — British Pound'],
-                ['EUR','€','EUR — Euro'],
-                ['USD','$','USD — US Dollar'],
-                ['CAD','$','CAD — Canadian Dollar'],
-                ['AUD','$','AUD — Australian Dollar'],
-                ['CHF','CHF','CHF — Swiss Franc'],
-                ['JPY','¥','JPY — Japanese Yen'],
-                ['NOK','kr','NOK — Norwegian Krone'],
-                ['SEK','kr','SEK — Swedish Krona'],
-                ['DKK','kr','DKK — Danish Krone'],
-              ].map(([code,sym,label]) =>
-                `<option value="${code}" data-sym="${sym}" ${(s.currency||'GBP')===code?'selected':''}>${label}</option>`
-              ).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Symbol</label>
-            <input class="form-control" id="s-currency-symbol" value="${escHtml(s.currency_symbol||'£')}" placeholder="£" maxlength="4" />
-          </div>
-        </div>
+        <div class="settings-section-title">Tax</div>
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Tax Name</label>
@@ -89,28 +60,10 @@ async function renderSettings() {
           </div>
           <div class="form-group">
             <label class="form-label">Default Tax Rate (%)</label>
-            <input class="form-control" id="s-tax-rate" type="number" value="${s.tax_rate||20}" min="0" max="100" step="0.1" />
+            <input class="form-control" id="s-tax-rate" type="number" value="${taxRate}" min="0" max="100" step="0.1" />
           </div>
         </div>
-      </div>
-
-      <!-- Bank Details -->
-      <div class="settings-section">
-        <div class="settings-section-title">Bank Details</div>
-        <div class="form-group">
-          <label class="form-label">Bank Name</label>
-          <input class="form-control" id="s-bank-name" value="${escHtml(s.bank_name||'')}" placeholder="Barclays, HSBC…" />
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Account Number</label>
-            <input class="form-control" id="s-bank-account" value="${escHtml(s.bank_account||'')}" placeholder="12345678" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Sort Code</label>
-            <input class="form-control" id="s-bank-sort" value="${escHtml(s.bank_sort_code||'')}" placeholder="12-34-56" />
-          </div>
-        </div>
+        <div class="settings-note" style="margin-bottom:0">Not VAT registered? Set the rate to 0.</div>
       </div>
 
       <button class="btn btn-primary btn-full" onclick="saveSettings()" style="margin-bottom:24px">
@@ -154,31 +107,19 @@ async function renderSettings() {
   }
 }
 
-/* ── Auto-fill symbol when currency changes ─────────────── */
-function updateSymbol() {
-  const sel = document.getElementById('s-currency');
-  const opt = sel.options[sel.selectedIndex];
-  document.getElementById('s-currency-symbol').value = opt.dataset.sym || '';
-}
-
 /* ── Save settings ──────────────────────────────────────── */
+// Only the fields on this page. API.saveSettings merges, so everything
+// My Details owns (business, address, currency, bank, tax numbers) is
+// left exactly as it was.
 async function saveSettings() {
+  const rate = parseFloat(document.getElementById('s-tax-rate').value);
   const body = {
-    company_name:     document.getElementById('s-company-name').value.trim(),
-    company_address:  document.getElementById('s-company-address').value.trim(),
-    company_email:    document.getElementById('s-company-email').value.trim(),
-    company_phone:    document.getElementById('s-company-phone').value.trim(),
     invoice_prefix:   document.getElementById('s-inv-prefix').value.trim() || 'INV',
     next_invoice_no:  parseInt(document.getElementById('s-inv-next').value) || 1,
     payment_terms:    document.getElementById('s-payment-terms').value.trim(),
     notes:            document.getElementById('s-notes').value.trim(),
-    currency:         document.getElementById('s-currency').value,
-    currency_symbol:  document.getElementById('s-currency-symbol').value.trim(),
     tax_name:         document.getElementById('s-tax-name').value.trim() || 'VAT',
-    tax_rate:         parseFloat(document.getElementById('s-tax-rate').value) || 20,
-    bank_name:        document.getElementById('s-bank-name').value.trim(),
-    bank_account:     document.getElementById('s-bank-account').value.trim(),
-    bank_sort_code:   document.getElementById('s-bank-sort').value.trim()
+    tax_rate:         Number.isFinite(rate) ? rate : 20     // 0 stays 0
   };
 
   try {

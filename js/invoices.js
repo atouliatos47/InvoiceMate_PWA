@@ -93,6 +93,7 @@ async function openInvoiceDetail(id) {
     const inv = await API.getInvoice(id);
     const client = inv.client_snapshot ? JSON.parse(typeof inv.client_snapshot === 'string'
       ? inv.client_snapshot : JSON.stringify(inv.client_snapshot)) : {};
+    const cols = unitLabels(inv.billing_mode);   // Hours / Rate or Qty / Price
 
     document.getElementById('modal-content').innerHTML = `
       <div class="modal-title">${inv.invoice_number}</div>
@@ -120,7 +121,7 @@ async function openInvoiceDetail(id) {
           <div class="card-title" style="margin-bottom:10px">From</div>
           <div style="font-size:0.9rem;line-height:1.8">
             <strong>${escHtml(App.settings.company_name)}</strong><br>
-            ${App.settings.company_address ? escHtml(App.settings.company_address) + '<br>' : ''}
+            ${companyAddressLine(App.settings) ? escHtml(companyAddressLine(App.settings)) + '<br>' : ''}
             ${App.settings.company_email   ? `<a href="mailto:${escHtml(App.settings.company_email)}" style="color:var(--accent)">${escHtml(App.settings.company_email)}</a><br>` : ''}
             ${App.settings.company_phone   ? escHtml(App.settings.company_phone) + '<br>' : ''}
             ${App.settings.bank_name ? `<span style="color:var(--text-muted);font-size:0.82rem">Bank: ${escHtml(App.settings.bank_name)} &nbsp;|&nbsp; A/C: ${escHtml(App.settings.bank_account||'')} &nbsp;|&nbsp; Sort: ${escHtml(App.settings.bank_sort_code||'')}</span>` : ''}
@@ -153,8 +154,8 @@ async function openInvoiceDetail(id) {
           <thead>
             <tr style="color:var(--text-muted);text-align:left;border-bottom:1px solid var(--border)">
               <th style="padding:4px 0;width:50%">Description</th>
-              <th style="padding:4px;text-align:right">Qty</th>
-              <th style="padding:4px;text-align:right">Price</th>
+              <th style="padding:4px;text-align:right">${cols.qty}</th>
+              <th style="padding:4px;text-align:right">${cols.priceShort}</th>
               <th style="padding:4px;text-align:right">Total</th>
             </tr>
           </thead>
@@ -210,9 +211,12 @@ async function openInvoiceForm(id = null) {
 
   try {
     // Load clients & settings in parallel, plus invoice if editing
+    // Always read fresh: it's all on the device now, so it costs nothing,
+    // and a remembered copy could miss a change made in My Details or a
+    // client added a moment ago.
     const [clients, settings, inv] = await Promise.all([
-      App._clients ? Promise.resolve(App._clients) : API.getClients(),
-      App.settings.currency ? Promise.resolve(App.settings) : API.getSettings(),
+      API.getClients(),
+      API.getSettings(),
       id ? API.getInvoice(id) : Promise.resolve(null)
     ]);
     App._clients  = clients;
@@ -226,6 +230,10 @@ async function openInvoiceForm(id = null) {
     const selClient= inv?.client_id   || '';
     const items    = inv?.items?.length ? inv.items
       : [{ description:'', quantity:1, unit_price:0 }];
+    // A new invoice follows My Details (Bill by the Hour / by Quantity);
+    // an existing one keeps the mode it was made with.
+    const mode     = inv ? (inv.billing_mode || 'quantity') : (settings.invoice_mode || 'hourly');
+    const cols     = unitLabels(mode);
 
     document.getElementById('modal-content').innerHTML = `
       <div class="modal-title">${id ? 'Edit Invoice' : 'New Invoice'}</div>
@@ -267,6 +275,7 @@ async function openInvoiceForm(id = null) {
             </div>`).join('')}
         </div>
         <input type="hidden" id="if-template" value="${template}" />
+        <input type="hidden" id="if-mode" value="${mode}" />
       </div>
 
       <!-- Tax rate -->
@@ -283,8 +292,8 @@ async function openInvoiceForm(id = null) {
           <thead>
             <tr>
               <th class="col-desc">Description</th>
-              <th class="col-qty">Qty</th>
-              <th class="col-price">Unit Price</th>
+              <th class="col-qty">${cols.qty}</th>
+              <th class="col-price">${cols.price}</th>
               <th class="col-total">Total</th>
               <th class="col-del"></th>
             </tr>
@@ -431,6 +440,7 @@ async function saveInvoice(id) {
     issue_date:      document.getElementById('if-issue').value,
     due_date:        document.getElementById('if-due').value,
     template:        document.getElementById('if-template').value,
+    billing_mode:    document.getElementById('if-mode').value,
     currency:        App.settings.currency        || 'GBP',
     currency_symbol: App.settings.currency_symbol || '£',
     tax_rate:        parseFloat(document.getElementById('if-tax').value || 0),
