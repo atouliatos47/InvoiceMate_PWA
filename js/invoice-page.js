@@ -329,13 +329,22 @@ const IP = {
     if (!hasLine) return showToast(`Add at least one entry with ${this.labels().qty.toLowerCase()} and a rate`, 'error');
 
     // A name that matches a saved client brings their address onto the invoice.
-    const client = this.clients.find(c => (c.name || '').trim().toLowerCase() === name.toLowerCase());
+    let client = this.clients.find(c => (c.name || '').trim().toLowerCase() === name.toLowerCase());
+    // A name that isn't saved yet becomes a new client — just the name for
+    // now; email, address and so on can be added later on the Clients tab.
+    // (Country left empty, so a name-only client doesn't print "United Kingdom".)
+    let added = null;
+    try {
+      if (!client) client = added = await API.createClient({ name, country: '' });
+    } catch (err) {
+      return showToast(err.message, 'error');
+    }
     const issue = s.issue_date || todayISO();
     const inv = this.invoice;
     const body = {
       invoice_number:  s.invoice_number,
-      client_id:       client ? client.id : null,
-      client_snapshot: client || { name },
+      client_id:       client.id,
+      client_snapshot: client,
       issue_date:      issue,
       // No due date — invoices don't carry a payment deadline.
       due_date:        null,
@@ -353,12 +362,18 @@ const IP = {
       if (s.id) await API.updateInvoice(s.id, body);
       else      await API.createInvoice(body);
       Draft.clear();   // it's saved for real now
-      showToast(s.id ? 'Invoice updated' : 'Invoice saved', 'success');
+      const done = s.id ? 'Invoice updated' : 'Invoice saved';
+      showToast(added ? `${done} — ${name} added to your clients` : done, 'success');
       this.close();
       App._invoices = await API.getInvoices();
+      if (added) App._clients = null;      // the Clients tab reloads with them in it
       if (App.currentView === 'invoices')  renderInvoiceList();
       if (App.currentView === 'dashboard') renderDashboard();
+      if (App.currentView === 'clients')   renderClientList();
     } catch (err) {
+      // The invoice didn't save (e.g. that number's taken), so don't keep a
+      // client that was only just made for it.
+      if (added) await API.deleteClient(added.id).catch(() => {});
       showToast(err.message, 'error');
     }
   }

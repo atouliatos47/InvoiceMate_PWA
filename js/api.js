@@ -211,7 +211,9 @@ const API = {
       id: Store.newId('client'),
       name: body.name, email: body.email || '', phone: body.phone || '',
       address: body.address || '', city: body.city || '', postcode: body.postcode || '',
-      country: body.country || 'United Kingdom', notes: body.notes || '',
+      // An explicit '' stays empty (a client added by just typing a name on
+      // an invoice); nothing given at all means United Kingdom.
+      country: body.country ?? 'United Kingdom', notes: body.notes || '',
       created_at: now(), updated_at: now()
     };
     d.clients.push(c);
@@ -225,6 +227,12 @@ const API = {
       name: body.name, email: body.email, phone: body.phone,
       address: body.address, city: body.city, postcode: body.postcode,
       country: body.country, notes: body.notes, updated_at: now()
+    });
+    // Details added or changed here also go onto this client's invoices that
+    // are still drafts (e.g. one saved with just a name, before the address
+    // was filled in). Sent and paid invoices keep the details they went out with.
+    Store.load().invoices.forEach(inv => {
+      if (inv.client_id == id && (inv.status || 'draft') === 'draft') inv.client_snapshot = copy(c);
     });
     Store.save();
     return copy(c);
