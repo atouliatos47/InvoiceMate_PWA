@@ -67,6 +67,13 @@ html, body {
 }
 
 .topbar-left { display: flex; align-items: center; gap: 10px; }
+/* The logo in the top bar: a small rounded tile with a white edge */
+.topbar-logo {
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,0.9);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  background: #c9ccd1;   /* the logo's own grey, shown while the picture loads */
+}
 .logo-mark   { display: none; }
 .logo-text   {
   font-size: 1.1rem;
