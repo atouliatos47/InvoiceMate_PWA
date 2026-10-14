@@ -85,9 +85,14 @@ html, body {
 
 /* ── Main / Views ───────────────────────────────────────── */
 main {
-  margin-top: var(--top-h);
-  margin-bottom: calc(var(--nav-h) + 20px);   /* + room for the raised Home button */
-  min-height: calc(100vh - var(--top-h) - var(--nav-h));
+  /* Room for the top bar and the bottom bar (+20px for the raised Home
+     button). PADDING, not margin: a top margin here "leaks" out through
+     <body> and pushed the whole page 56px down, so every page could
+     always be scrolled a little. Exactly one screen tall, so a page only
+     scrolls when it really has more than fits. */
+  padding-top: var(--top-h);
+  padding-bottom: calc(var(--nav-h) + 20px);
+  min-height: 100vh;
   overflow-y: auto;
 }
 
@@ -261,6 +266,22 @@ main {
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
+
+/* ── Home: name + "+ New Invoice" on one line ───────────── */
+.dash-head { gap: 12px; margin-bottom: 20px; }
+.dash-who  { min-width: 0; }
+.dash-who .section-title, .dash-who .text-muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-new  { flex-shrink: 0; padding: 10px 16px; }
+
+/* Home: invoice cards in columns (js/app.js layoutDashboardGrid sets how
+   many columns and rows; the cards fill each column top to bottom). */
+.dash-grid {
+  display: grid; gap: 8px 10px;
+  grid-template-columns: minmax(0, 1fr);   /* one plain stack until the JS lays out columns */
+}
+.dash-grid .list-item { margin-bottom: 0; padding: 12px 14px; }
+.dash-client { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-date   { margin-top: 1px; }
 
 /* ── List items ─────────────────────────────────────────── */
 .list-item {

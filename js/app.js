@@ -6,7 +6,7 @@ const App = {
 
 // Shown small on the start screen, so it's easy to check which version a
 // device is running. Keep in step with CACHE_NAME in sw.js.
-const APP_VERSION = 'v10';   // keep in step with CACHE_NAME in sw.js
+const APP_VERSION = 'v11';   // keep in step with CACHE_NAME in sw.js
 
 /* ── Toast ──────────────────────────────────────────────── */
 function showToast(msg, type = '') {
@@ -128,14 +128,16 @@ async function renderDashboard() {
     const paidTotal = paid.reduce((s, i) => s + parseFloat(i.total || 0), 0);
     const overdue   = invoices.filter(i => i.status === 'overdue');
     const draft     = invoices.filter(i => i.status === 'draft');
-    const recent    = invoices.slice(0, 5);
 
     el.innerHTML = `
-      <div class="section-header" style="margin-bottom:20px">
-        <div>
-          <div class="section-title">${settings.company_name || 'Invoice Manager'}</div>
-          <div class="text-muted">${settings.company_email || (settings.company_name ? '' : 'Add your details first — tap the person icon at the top')}</div>
+      <!-- Name on the left, "+ New Invoice" up here on the right, so the
+           invoices below have the whole screen -->
+      <div class="section-header dash-head">
+        <div class="dash-who">
+          <div class="section-title">${escHtml(settings.company_name || 'Invoice Manager')}</div>
+          <div class="text-muted">${escHtml(settings.company_email || (settings.company_name ? '' : 'Add your details first — tap the person icon at the top'))}</div>
         </div>
+        <button class="btn btn-primary dash-new" onclick="openInvoiceForm()">+ New Invoice</button>
       </div>
 
       <div class="stats-grid">
@@ -162,26 +164,23 @@ async function renderDashboard() {
         <button class="btn btn-outline btn-sm" onclick="navigate('invoices')">View all</button>
       </div>
 
-      ${recent.length === 0
-        ? emptyState(ICONS.invoice, 'No invoices yet', 'Create your first invoice to get started.', '+ New Invoice', "navigate('invoices');setTimeout(openInvoiceForm,100)")
-        : recent.map(inv => `
-          <div class="list-item" onclick="openInvoiceDetail(${inv.id})">
+      ${invoices.length === 0
+        ? emptyState(ICONS.invoice, 'No invoices yet', 'Tap + New Invoice at the top to make your first one.')
+        : `<div class="dash-grid" id="dash-grid">${invoices.map(inv => `
+          <div class="list-item dash-card" onclick="openInvoiceDetail(${inv.id})">
             <div class="list-item-left">
-              <div class="item-title">${inv.invoice_number}</div>
-              <div class="item-sub">${inv.client_name || 'No client'} &middot; ${fmtDate(inv.issue_date)}</div>
+              <div class="item-title">${escHtml(inv.invoice_number)}</div>
+              <div class="item-sub dash-client">${escHtml(inv.client_name || 'No client')}</div>
+              <div class="item-sub dash-date">${fmtDate(inv.issue_date)}</div>
             </div>
             <div class="list-item-right">
               <div class="item-amount">${fmtMoney(inv.total)}</div>
               <div class="mt-1">${badge(inv.status)}</div>
             </div>
-          </div>`).join('') + `
-          <div style="margin-top:16px">
-            <button class="btn btn-primary btn-full" onclick="navigate('invoices');setTimeout(openInvoiceForm,100)">
-              + New Invoice
-            </button>
-          </div>`
+          </div>`).join('')}</div>`
       }
     `;
+    layoutDashboardGrid();
   } catch (err) {
     el.innerHTML = `<div class="empty-state">
       <div class="empty-title">Failed to load dashboard</div>
@@ -189,6 +188,70 @@ async function renderDashboard() {
     </div>`;
   }
 }
+
+/* ── Home: invoices in columns ──────────────────────────────
+   The invoices go down one column until they reach the bottom bar, then
+   carry on in a second column, then a third, and so on — so they're all
+   on screen without scrolling. The page gets wider as columns are added.
+   Only when there's no more room across (a phone, a narrow window) does
+   the list grow downwards and scroll.
+   Works it out again whenever the window changes size. */
+const DASH_GRID = {
+  colMin:   220,   // narrowest a card may get (px)
+  colIdeal: 330,   // comfortable card width when there's room
+  gap:      10,    // space between columns
+  rowGap:   8,     // space between cards in a column
+  maxPage:  2000   // the page never gets wider than this (more columns before any scrolling)
+};
+
+function layoutDashboardGrid() {
+  const view = document.getElementById('view-dashboard');
+  const grid = document.getElementById('dash-grid');
+  if (!grid || view.classList.contains('hidden')) return;
+  const n = grid.children.length;
+  const G = DASH_GRID;
+
+  // Measure from a plain single stack, at the usual page width.
+  view.style.maxWidth = '';
+  grid.style.gridTemplateColumns = grid.style.gridTemplateRows = grid.style.gridAutoFlow = '';
+
+  // Room across: the window less the page's 16px side padding.
+  const fullW   = Math.min(window.innerWidth, G.maxPage) - 32;
+  const maxCols = Math.max(1, Math.floor((fullW + G.gap) / (G.colMin + G.gap)));
+
+  // Room down: from the top of the first card to the bottom of the screen,
+  // less the space kept free under the page (the bottom bar + the raised
+  // Home button) and the page's own bottom padding.
+  const px      = (el, prop) => parseFloat(getComputedStyle(el)[prop]) || 0;
+  const barRoom = px(document.querySelector('main'), 'paddingBottom') + px(view, 'paddingBottom');
+  const top     = grid.getBoundingClientRect().top + window.scrollY;
+  const cardH   = Math.max(...Array.from(grid.children, c => c.offsetHeight));
+  const fitRows = Math.max(2, Math.floor((window.innerHeight - top - barRoom + G.rowGap) / (cardH + G.rowGap)));
+
+  // Fill a column to the bottom, then start the next one…
+  let cols = Math.ceil(n / fitRows);
+  let rows = cols > 1 ? fitRows : n;
+  // …unless that's more columns than fit across: then use every column
+  // there's room for and let the list scroll.
+  if (cols > maxCols) { cols = maxCols; rows = Math.ceil(n / cols); }
+
+  // Widen the page for the extra columns (one column keeps the usual 680px).
+  const wanted = cols * G.colIdeal + (cols - 1) * G.gap + 32;
+  view.style.maxWidth = cols > 1 ? `${Math.min(Math.max(680, wanted), fullW + 32)}px` : '';
+
+  grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+  grid.style.gridTemplateRows    = `repeat(${rows}, auto)`;
+  grid.style.gridAutoFlow        = 'column';   // fill down each column first
+  grid.dataset.cols = cols;   // (handy for checking: how many columns are showing)
+  grid.dataset.rows = rows;
+}
+
+// Window resized / phone turned: lay the columns out again.
+let _dashResizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_dashResizeTimer);
+  _dashResizeTimer = setTimeout(() => { if (App.currentView === 'dashboard') layoutDashboardGrid(); }, 150);
+});
 
 /* ── Boot ───────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', async () => {
