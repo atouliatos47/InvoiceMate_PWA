@@ -222,21 +222,38 @@ async function openInvoiceForm(id = null) {
     App._clients  = clients;
     App.settings  = settings;
 
-    // Default values
+    // An unfinished version of THIS form (same invoice, or both "new")
+    // saved earlier? Then the form opens with what was typed, not blank.
+    const saved    = Draft.get();
+    const draft    = saved && (saved.id || null) === (id || null) ? saved : null;
+
+    // Default values (the draft's, when there is one)
     const today    = new Date().toISOString().split('T')[0];
     const due30    = new Date(Date.now() + 30*864e5).toISOString().split('T')[0];
-    const template = inv?.template    || 'classic';
-    const taxRate  = inv?.tax_rate    ?? settings.tax_rate ?? 20;
-    const selClient= inv?.client_id   || '';
-    const items    = inv?.items?.length ? inv.items
+    const template = draft?.template  || inv?.template || 'classic';
+    const taxRate  = draft ? draft.tax_rate : (inv?.tax_rate ?? settings.tax_rate ?? 20);
+    const selClient= draft ? draft.client_id : (inv?.client_id || '');
+    const issue    = draft?.issue_date || inv?.issue_date?.split('T')[0] || today;
+    const due      = draft?.due_date   || inv?.due_date?.split('T')[0]   || due30;
+    const notes    = draft ? draft.notes : (inv?.notes || settings.payment_terms || '');
+    const items    = draft?.items?.length ? draft.items
+      : inv?.items?.length ? inv.items
       : [{ description:'', quantity:1, unit_price:0 }];
     // A new invoice follows My Details (Bill by the Hour / by Quantity);
     // an existing one keeps the mode it was made with.
-    const mode     = inv ? (inv.billing_mode || 'quantity') : (settings.invoice_mode || 'hourly');
+    const mode     = draft?.billing_mode || (inv ? (inv.billing_mode || 'quantity') : (settings.invoice_mode || 'hourly'));
     const cols     = unitLabels(mode);
+    _rowCount = items.length;   // new rows get numbers after the ones already drawn
 
     document.getElementById('modal-content').innerHTML = `
       <div class="modal-title">${id ? 'Edit Invoice' : 'New Invoice'}</div>
+      <input type="hidden" id="if-id" value="${id || ''}" />
+
+      ${draft ? `
+        <div class="draft-banner">
+          <span>Your unfinished invoice — carry on where you left off.</span>
+          <button class="btn btn-ghost btn-sm" onclick="discardDraft(${id || 'null'})">Discard</button>
+        </div>` : ''}
 
       <!-- Client -->
       <div class="form-group">
@@ -251,11 +268,11 @@ async function openInvoiceForm(id = null) {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Issue Date</label>
-          <input type="date" class="form-control" id="if-issue" value="${inv?.issue_date?.split('T')[0] || today}" />
+          <input type="date" class="form-control" id="if-issue" value="${issue}" />
         </div>
         <div class="form-group">
           <label class="form-label">Due Date</label>
-          <input type="date" class="form-control" id="if-due" value="${inv?.due_date?.split('T')[0] || due30}" />
+          <input type="date" class="form-control" id="if-due" value="${due}" />
         </div>
       </div>
 
@@ -315,11 +332,11 @@ async function openInvoiceForm(id = null) {
       <!-- Notes -->
       <div class="form-group" style="margin-top:14px">
         <label class="form-label">Notes</label>
-        <textarea class="form-control" id="if-notes" placeholder="Payment terms, bank details, etc.">${escHtml(inv?.notes || settings.payment_terms || '')}</textarea>
+        <textarea class="form-control" id="if-notes" placeholder="Payment terms, bank details, etc.">${escHtml(notes)}</textarea>
       </div>
 
       <div class="form-actions" style="margin-top:20px">
-        <button class="btn btn-ghost btn-full" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-ghost btn-full" onclick="cancelInvoiceForm()">Cancel</button>
         <button class="btn btn-primary btn-full" onclick="saveInvoice(${id || 'null'})">
           ${id ? 'Save Changes' : 'Create Invoice'}
         </button>
@@ -327,10 +344,76 @@ async function openInvoiceForm(id = null) {
     `;
 
     recalcTotals();
+    // Save the form as it's typed into (see Draft below). Set on the pop-up's
+    // content box, so it catches every field including rows added later.
+    const content = document.getElementById('modal-content');
+    content.oninput  = () => Draft.save();
+    content.onchange = () => Draft.save();
   } catch (err) {
     document.getElementById('modal-content').innerHTML =
       `<div class="empty-state"><div class="empty-title">Failed to load form</div><div class="text-muted">${err.message}</div></div>`;
   }
+}
+
+/* ── Unfinished invoice (draft) ─────────────────────────────
+   The invoice form is saved on the device as it's typed into, so a
+   half-finished invoice is never lost — not when the app goes back to
+   the start screen after a minute idle, not when the pop-up is closed
+   with ✕ or a tap outside it, not even if Android shuts the app.
+   It's cleared only by Create/Save (it's done) or Cancel (you meant it).
+   One draft at a time: either a new invoice, or edits to one invoice. */
+const DRAFT_KEY = 'invoicemate.draft';
+
+const Draft = {
+  get() {
+    try { return JSON.parse(localStorage.getItem(DRAFT_KEY)); } catch (_) { return null; }
+  },
+  save() {
+    if (!document.getElementById('if-client')) return;   // the form isn't open
+    const v = id => document.getElementById(id).value;
+    const draft = {
+      id:           Number(v('if-id')) || null,
+      client_id:    v('if-client'),
+      issue_date:   v('if-issue'),
+      due_date:     v('if-due'),
+      template:     v('if-template'),
+      billing_mode: v('if-mode'),
+      tax_rate:     v('if-tax'),
+      notes:        v('if-notes'),
+      items:        readItems(),
+      saved_at:     new Date().toISOString()
+    };
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (_) {}
+  },
+  clear() {
+    localStorage.removeItem(DRAFT_KEY);
+  }
+};
+
+// Cancel button: you meant to throw it away, so the draft goes too.
+function cancelInvoiceForm() {
+  Draft.clear();
+  closeModal();
+}
+
+// "Discard" on the restored banner: start the form again from scratch.
+function discardDraft(id) {
+  Draft.clear();
+  openInvoiceForm(id);
+}
+
+// Called by the start screen after Go / PIN (js/lock.js). If the form is
+// still open underneath, everything is already as it was. If it isn't —
+// the app was closed and reopened — open it again from the saved draft.
+async function resumeDraftIfAny() {
+  const draft = Draft.get();
+  if (!draft || document.getElementById('if-client')) return;
+  if (draft.id) {
+    try { await API.getInvoice(draft.id); }
+    catch (_) { Draft.clear(); return; }      // that invoice has since been deleted
+  }
+  navigate('invoices');
+  openInvoiceForm(draft.id);
 }
 
 /* ── Line item row HTML ─────────────────────────────────── */
@@ -359,23 +442,24 @@ function itemRow(i, it = {}) {
     </tr>`;
 }
 
+// Next free row number. openInvoiceForm() resets it to the number of rows
+// it drew — it used to start at 1 every time, so on an invoice with 3
+// lines "+ Add Line" made a second "row-1" and Delete could remove the
+// wrong line.
 let _rowCount = 1;
 
 function addItemRow() {
-  const tbody = document.getElementById('items-body');
   const i = _rowCount++;
-  const tr = document.createElement('tr');
-  tr.id = `row-${i}`;
-  tr.innerHTML = itemRow(i).replace(`<tr id="row-${i}">`, '').replace('</tr>', '');
-  // Re-create properly
-  tbody.insertAdjacentHTML('beforeend', itemRow(i));
+  document.getElementById('items-body').insertAdjacentHTML('beforeend', itemRow(i));
   recalcTotals();
+  Draft.save();
 }
 
 function deleteItemRow(i) {
   const row = document.getElementById(`row-${i}`);
   if (row) row.remove();
   recalcTotals();
+  Draft.save();
 }
 
 function selectTemplate(tplId) {
@@ -383,6 +467,7 @@ function selectTemplate(tplId) {
     el.classList.toggle('selected', el.dataset.tpl === tplId);
   });
   document.getElementById('if-template').value = tplId;
+  Draft.save();
 }
 
 /* ── Recalculate totals ─────────────────────────────────── */
@@ -459,6 +544,7 @@ async function saveInvoice(id) {
       await API.createInvoice(body);
       showToast('Invoice created', 'success');
     }
+    Draft.clear();   // it's saved for real now
     closeModal();
     App._invoices = await API.getInvoices();
     if (App.currentView === 'invoices')  renderInvoiceList();

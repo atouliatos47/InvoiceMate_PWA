@@ -23,6 +23,8 @@
        set the keypad below appears and it waits. See js/lock.js. -->
   <div id="start-screen" class="start-screen">
     <img src="icons/icon-512.png" alt="InvoiceMate" class="start-logo" />
+    <!-- No PIN set: tap Go to start. (With a PIN, the keypad below is the way in.) -->
+    <button id="go-btn" class="go-btn hidden" type="button">Go</button>
     <div id="lock-panel" class="lock-panel hidden">
       <div class="lock-title" id="lock-title">Enter your PIN</div>
       <div class="pin-dots" id="pin-dots"></div>

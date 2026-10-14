@@ -1,8 +1,19 @@
-/* ── Start screen + PIN lock ──────────────────────────────
-   The Flutter InvoiceMate had an app lock (its local_auth and
-   flutter_secure_storage packages). This is the PWA's version: an
-   optional 4-digit PIN asked for on the start screen.
+/* ── Start screen, Go button, idle return + PIN lock ──────
+   The start screen is the InvoiceMate logo on its own grey. It's the
+   way into the app, like the Flutter app's opening screen:
 
+     no PIN set  → logo + a Go button — tap Go to start
+     PIN set     → logo + keypad — enter the PIN to start
+
+   It comes back by itself after ONE MINUTE without a touch, and when
+   you return to the app after more than a minute away (another app,
+   screen off). It's laid OVER the app rather than replacing it, so
+   whatever was on screen underneath — including a half-filled invoice
+   — is exactly where you left it when you press Go. (The invoice is
+   also saved as you type, in case Android closes the app; see the
+   Draft code in invoices.js.)
+
+   The PIN (optional, Settings → App Lock), as the Flutter app's lock:
    - The PIN itself is never stored. Only a SHA-256 hash of it, mixed
      with a random "salt", is saved — so even someone reading the
      device's storage can't see the PIN.
@@ -10,28 +21,23 @@
      backup file never carries a PIN onto someone else's device.
    - It's a privacy lock, like a phone's lock screen: it stops someone
      picking up the tablet and browsing the invoices.
-
-   Start screen behaviour:
-     no PIN set  → logo shows briefly, then fades away
-     PIN set     → logo + keypad, waits for the right PIN
-   It also locks again if the app has been in the background for more
-   than a minute.
 ──────────────────────────────────────────────────────────── */
 
-const LOCK_KEY        = 'invoicemate.lock';
-const PIN_LENGTH      = 4;
-const RELOCK_AFTER_MS = 60 * 1000;   // back in the app after 1+ minute away → PIN again
-const MAX_TRIES       = 5;           // then a 30-second wait
-const WAIT_MS         = 30 * 1000;
+const LOCK_KEY   = 'invoicemate.lock';
+const PIN_LENGTH = 4;
+const IDLE_MS    = 60 * 1000;   // a minute without a touch (or away) → start screen
+const MAX_TRIES  = 5;           // then a 30-second wait
+const WAIT_MS    = 30 * 1000;
 
 const Lock = {
-  _mode: null,        // 'unlock' | 'verify' | 'new' | 'confirm'
+  _mode: null,        // null (app in use) | 'go' | 'unlock' | 'verify' | 'new' | 'confirm'
   _entry: '',
   _firstPin: null,    // the PIN typed the first time, while setting a new one
   _after: null,       // what to do once 'verify' succeeds
   _tries: 0,
   _blockedUntil: 0,
   _hiddenAt: null,
+  _lastActivity: Date.now(),
 
   /* ── Stored PIN ───────────────────────────────────────── */
   _get() {
@@ -58,22 +64,40 @@ const Lock = {
   start() {
     document.querySelectorAll('#pin-pad button').forEach(btn =>
       btn.addEventListener('click', () => this._press(btn.dataset.key)));
-    // A tablet keyboard works too.
+    document.getElementById('go-btn').addEventListener('click', () => this._go());
+
+    // A tablet keyboard works too: digits for the PIN, Enter for Go.
     document.addEventListener('keydown', e => {
       if (!this._mode) return;
+      if (this._mode === 'go') { if (e.key === 'Enter') this._go(); return; }
       if (/^[0-9]$/.test(e.key)) this._press(e.key);
       else if (e.key === 'Backspace') this._press('back');
     });
-    // Lock again after a while in the background.
+
+    // Idle: any touch, tap, scroll or key press counts as "still here".
+    // Capture phase, so taps inside pop-ups and the My Details page count.
+    const stillHere = () => { this._lastActivity = Date.now(); };
+    ['pointerdown', 'touchstart', 'mousemove', 'keydown', 'scroll', 'input', 'wheel'].forEach(evt =>
+      document.addEventListener(evt, stillHere, { passive: true, capture: true }));
+    // One check every few seconds rather than a timer per tap.
+    setInterval(() => {
+      if (!this._mode && !document.hidden && Date.now() - this._lastActivity > IDLE_MS) this.showStart();
+    }, 5000);
+
+    // Back after more than a minute away (another app, screen off) → start screen.
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) { this._hiddenAt = Date.now(); return; }
-      if (this.isOn() && !this._mode && this._hiddenAt && Date.now() - this._hiddenAt > RELOCK_AFTER_MS) {
-        this._show('unlock');
-      }
+      if (!this._mode && this._hiddenAt && Date.now() - this._hiddenAt > IDLE_MS) this.showStart();
+      this._lastActivity = Date.now();
     });
 
+    this.showStart();
+  },
+
+  // The way in: Go button, or the keypad when a PIN is set.
+  showStart() {
     if (this.isOn()) this._show('unlock');
-    else setTimeout(() => this._hide(), 900);   // just the logo, briefly
+    else this._showGo();
   },
 
   /* ── Called from Settings ─────────────────────────────── */
@@ -97,12 +121,25 @@ const Lock = {
     confirm: 'Enter the same PIN again'
   },
 
+  _showGo() {
+    this._mode = 'go';
+    const screen = document.getElementById('start-screen');
+    screen.classList.remove('fade-out', 'locked');
+    document.getElementById('lock-panel').classList.add('hidden');
+    document.getElementById('go-btn').classList.remove('hidden');
+  },
+
+  _go() {
+    if (this._mode === 'go') this._hide();
+  },
+
   _show(mode, title) {
     this._mode = mode;
     this._entry = '';
     const screen = document.getElementById('start-screen');
     screen.classList.remove('fade-out');
     screen.classList.add('locked');
+    document.getElementById('go-btn').classList.add('hidden');
     document.getElementById('lock-panel').classList.remove('hidden');
     document.getElementById('lock-title').textContent = title || this._titles[mode];
     // Unlocking offers "Forgot?"; setting or changing a PIN offers "Cancel".
@@ -111,16 +148,22 @@ const Lock = {
   },
 
   _hide() {
+    // Coming in through Go or the PIN (not finishing a Settings PIN change)
+    // is the moment to pick up an unfinished invoice.
+    const enteringApp = this._mode === 'go' || this._mode === 'unlock';
     this._mode = null;
     this._entry = '';
     this._firstPin = null;
     this._after = null;
+    this._lastActivity = Date.now();
     const screen = document.getElementById('start-screen');
     screen.classList.add('fade-out');
     setTimeout(() => {
       screen.classList.remove('locked');
       document.getElementById('lock-panel').classList.add('hidden');
+      document.getElementById('go-btn').classList.add('hidden');
     }, 400);
+    if (enteringApp && typeof resumeDraftIfAny === 'function') resumeDraftIfAny();
   },
 
   _dots() {
@@ -138,7 +181,7 @@ const Lock = {
 
   /* ── Keypad ───────────────────────────────────────────── */
   async _press(key) {
-    if (!this._mode) return;
+    if (!this._mode || this._mode === 'go') return;
     if (key === 'forgot') return this._mode === 'unlock' ? this._forgot() : this._cancel();
     if (key === 'back')   { this._entry = this._entry.slice(0, -1); return this._dots(); }
     if (Date.now() < this._blockedUntil) return;
@@ -204,6 +247,7 @@ const Lock = {
     if ((typed || '').trim().toUpperCase() !== 'RESET') return;
     localStorage.removeItem(STORE_KEY);
     localStorage.removeItem(LOCK_KEY);
+    localStorage.removeItem('invoicemate.draft');
     location.reload();
   }
 };

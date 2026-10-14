@@ -23,9 +23,13 @@ function openModal(html, title = '') {
 }
 
 function closeModal() {
+  // Closing the invoice form any way other than Create/Save or Cancel
+  // (the ✕, or a tap outside the pop-up) keeps what was typed — say so.
+  const formOpen = !!document.getElementById('if-client');
   document.getElementById('modal-overlay').classList.add('hidden');
   document.getElementById('modal-content').innerHTML = '';
   document.body.style.overflow = '';
+  if (formOpen && Draft.get()) showToast('Unfinished invoice kept — it opens again where you left off');
 }
 
 /* ── Navigation ─────────────────────────────────────────── */
@@ -130,7 +134,7 @@ async function renderDashboard() {
       <div class="section-header" style="margin-bottom:20px">
         <div>
           <div class="section-title">${settings.company_name || 'Invoice Manager'}</div>
-          <div class="text-muted">${settings.company_email || 'Set up your company in Settings'}</div>
+          <div class="text-muted">${settings.company_email || (settings.company_name ? '' : 'Add your details first — tap the person icon at the top')}</div>
         </div>
       </div>
 
@@ -227,8 +231,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   try { App.settings = await API.getSettings(); } catch (_) {}
 
   navigate('dashboard');
-  // Start screen: logo, then the PIN keypad if a PIN is set (js/lock.js).
-  // The dashboard is already drawn underneath, so it's ready the moment
-  // the start screen goes.
+  // Start screen: logo + Go button, or the PIN keypad if a PIN is set; it
+  // also comes back after a minute idle (js/lock.js). The dashboard is
+  // already drawn underneath, so it's ready the moment Go is pressed —
+  // and an unfinished invoice reopens then too (resumeDraftIfAny).
   Lock.start();
 });

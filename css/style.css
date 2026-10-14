@@ -766,6 +766,24 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 /* Smaller logo once the keypad needs the room */
 .start-screen.locked .start-logo { width: min(36vmin, 200px); }
 
+/* Go button — the Flutter app's dark teal (#006a60, its New Invoice button) */
+.go-btn {
+  margin-top: 20px; min-width: 200px; height: 56px; padding: 0 40px;
+  border: none; border-radius: 28px;
+  background: #006a60; color: #fff;
+  font: 600 20px Roboto, 'Segoe UI', sans-serif; letter-spacing: 1px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25); cursor: pointer;
+}
+.go-btn:active { background: #00544c; transform: translateY(1px); }
+
+/* "Your unfinished invoice" banner at the top of a restored invoice form */
+.draft-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: #fff8e1; border: 1px solid #ffe082; border-radius: 8px;
+  padding: 8px 8px 8px 12px; margin-bottom: 14px;
+  font-size: 0.88rem; color: #6d4c00;
+}
+
 .lock-panel { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .lock-title { color: #25325c; font-weight: 600; font-size: 1.05rem; text-align: center; }
 .pin-dots { display: flex; gap: 14px; height: 16px; }
