@@ -6,7 +6,7 @@ const App = {
 
 // Shown small on the start screen, so it's easy to check which version a
 // device is running. Keep in step with CACHE_NAME in sw.js.
-const APP_VERSION = 'v16';   // keep in step with CACHE_NAME in sw.js
+const APP_VERSION = 'v17';   // keep in step with CACHE_NAME in sw.js
 
 /* ── Toast ──────────────────────────────────────────────── */
 function showToast(msg, type = '') {
@@ -315,5 +315,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // also comes back after a minute idle (js/lock.js). The dashboard is
   // already drawn underneath, so it's ready the moment Go is pressed —
   // and an unfinished invoice reopens then too (resumeDraftIfAny).
+  Access.boot();   // a copy already in use carries on without a code (js/access.js)
   Lock.start();
 });

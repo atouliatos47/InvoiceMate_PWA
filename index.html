@@ -23,6 +23,14 @@
        set the keypad below appears and it waits. See js/lock.js. -->
   <div id="start-screen" class="start-screen">
     <img src="icons/icon-512.png" alt="InvoiceMate" class="start-logo" />
+    <!-- A brand-new copy: the invite code (or Sharon's owner code) first. See js/access.js. -->
+    <div id="access-panel" class="access-panel hidden">
+      <div class="access-title">Enter your invite code</div>
+      <input id="access-code" class="access-input" type="text" maxlength="16" placeholder="XXXX-XXXX"
+             autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Invite code" />
+      <button id="access-btn" class="go-btn" type="button">Go</button>
+      <div class="access-msg" id="access-msg">Ask the person who shared InvoiceMate with you.</div>
+    </div>
     <!-- No PIN set: tap Go to start. (With a PIN, the keypad below is the way in.) -->
     <button id="go-btn" class="go-btn hidden" type="button">Go</button>
     <div id="lock-panel" class="lock-panel hidden">
@@ -117,7 +125,9 @@
 
   <!-- ── Scripts ──────────────────────────────────────────── -->
   <script src="js/vendor/pdf-lib.min.js"></script>
+  <script src="js/vendor/qrcode.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/access.js"></script>
   <script src="js/lock.js"></script>
   <script src="js/backup.js"></script>
   <script src="js/settings.js"></script>

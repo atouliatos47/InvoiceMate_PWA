@@ -174,6 +174,14 @@ const MyDetails = {
           <span><strong>Backup, PIN lock &amp; numbering</strong><small>Save a backup file, set a PIN, change the invoice numbers</small></span>
           <svg class="md-more-arrow" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
         </button>
+
+        ${typeof Access !== 'undefined' && Access.isOwner() ? `
+        <!-- Owners only (js/access.js): a QR code + invite code for a friend -->
+        <button class="md-more-link md-share-link" onclick="MyDetails.openShare()">
+          <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+          <span><strong>Share InvoiceMate</strong><small>A QR code and invite code for a friend to get their own copy</small></span>
+          <svg class="md-more-arrow" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+        </button>` : ''}
       </div>`;
 
     this.currencyChanged();
@@ -204,6 +212,12 @@ const MyDetails = {
   openMore() {
     this.close();
     navigate('settings');
+  },
+
+  // "Share InvoiceMate" (owners only): close this page, show the QR code.
+  openShare() {
+    this.close();
+    Access.openShare();
   },
 
   _hide() {

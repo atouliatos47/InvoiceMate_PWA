@@ -65,10 +65,17 @@ const Lock = {
     document.querySelectorAll('#pin-pad button').forEach(btn =>
       btn.addEventListener('click', () => this._press(btn.dataset.key)));
     document.getElementById('go-btn').addEventListener('click', () => this._go());
+    // Invite / owner code box (js/access.js)
+    document.getElementById('access-btn').addEventListener('click', () => this._tryAccess());
+    document.getElementById('access-code').addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault(); e.stopPropagation();   // this Enter is for the code only — not also "Go"
+      this._tryAccess();
+    });
 
     // A tablet keyboard works too: digits for the PIN, Enter for Go.
     document.addEventListener('keydown', e => {
-      if (!this._mode) return;
+      if (!this._mode || this._mode === 'access') return;   // the code box handles its own typing
       if (this._mode === 'go') { if (e.key === 'Enter') this._go(); return; }
       if (/^[0-9]$/.test(e.key)) this._press(e.key);
       else if (e.key === 'Backspace') this._press('back');
@@ -105,10 +112,51 @@ const Lock = {
     this.showStart();
   },
 
-  // The way in: Go button, or the keypad when a PIN is set.
+  // The way in: the invite code on a brand-new copy; then the Go button,
+  // or the keypad when a PIN is set.
   showStart() {
-    if (this.isOn()) this._show('unlock');
+    if (typeof Access !== 'undefined' && !Access.isActivated()) this._showAccess();
+    else if (this.isOn()) this._show('unlock');
     else this._showGo();
+  },
+
+  /* ── Invite code (a brand-new copy) ───────────────────── */
+  _showAccess() {
+    this._mode = 'access';
+    const screen = document.getElementById('start-screen');
+    screen.classList.remove('fade-out', 'locked');
+    document.getElementById('go-btn').classList.add('hidden');
+    document.getElementById('lock-panel').classList.add('hidden');
+    document.getElementById('access-panel').classList.remove('hidden');
+    // Opened from the shared link / QR code: the code is in it — use it.
+    const fromLink = Access.codeFromUrl();
+    if (fromLink) {
+      document.getElementById('access-code').value = Access.pretty(fromLink);
+      this._tryAccess();
+    }
+  },
+
+  async _tryAccess() {
+    if (this._mode !== 'access' || this._checking) return;
+    const input = document.getElementById('access-code');
+    const msg = document.getElementById('access-msg');
+    this._checking = true;
+    const role = await Access.activate(input.value);
+    this._checking = false;
+    if (!role) {
+      msg.textContent = "That code doesn't look right. Check it and try again.";
+      msg.classList.add('bad');
+      input.classList.remove('shake'); void input.offsetWidth; input.classList.add('shake');
+      return;
+    }
+    Access.clearUrlCode();
+    msg.classList.remove('bad');
+    document.getElementById('access-panel').classList.add('hidden');
+    // The button under the code says Go — so a right code goes straight in
+    // (and, the very first time, on to the App Guide).
+    if (this.isOn()) { this._show('unlock'); return; }
+    this._mode = 'go';
+    this._hide();
   },
 
   /* ── Called from Settings ─────────────────────────────── */
@@ -137,6 +185,7 @@ const Lock = {
     const screen = document.getElementById('start-screen');
     screen.classList.remove('fade-out', 'locked');
     document.getElementById('lock-panel').classList.add('hidden');
+    document.getElementById('access-panel').classList.add('hidden');
     document.getElementById('go-btn').classList.remove('hidden');
   },
 
@@ -151,6 +200,7 @@ const Lock = {
     screen.classList.remove('fade-out');
     screen.classList.add('locked');
     document.getElementById('go-btn').classList.add('hidden');
+    document.getElementById('access-panel').classList.add('hidden');
     document.getElementById('lock-panel').classList.remove('hidden');
     document.getElementById('lock-title').textContent = title || this._titles[mode];
     // Unlocking offers "Forgot?"; setting or changing a PIN offers "Cancel".

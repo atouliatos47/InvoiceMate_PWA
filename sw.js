@@ -9,7 +9,7 @@
    notices this file changed, downloads the new set of files, and throws
    the old set away. Without that bump, devices keep the old version.
 ──────────────────────────────────────────────────────────── */
-const CACHE_NAME = 'invoicemate-standalone-v16';   // v16: Statistics gets Total / Paid Income and a Tax Summary
+const CACHE_NAME = 'invoicemate-standalone-v17';   // v17: invite codes + Share InvoiceMate (QR)
 
 // Relative paths, so the app works from a sub-folder address such as
 // https://<user>.github.io/InvoiceMate_PWA/ as well as from a domain root.
@@ -24,7 +24,9 @@ const APP_FILES = [
   'icons/apple-touch-icon.png',
   'icons/logo-bar.png',
   'js/vendor/pdf-lib.min.js',
+  'js/vendor/qrcode.js',
   'js/api.js',
+  'js/access.js',
   'js/lock.js',
   'js/backup.js',
   'js/settings.js',
