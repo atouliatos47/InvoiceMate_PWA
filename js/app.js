@@ -4,6 +4,10 @@ const App = {
   currentView: 'dashboard'
 };
 
+// Shown small on the start screen, so it's easy to check which version a
+// device is running. Keep in step with CACHE_NAME in sw.js.
+const APP_VERSION = 'v4';
+
 /* ── Toast ──────────────────────────────────────────────── */
 function showToast(msg, type = '') {
   const t = document.getElementById('toast');
@@ -218,8 +222,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   if ('serviceWorker' in navigator) {
+    // When an update arrives, the new service worker takes over this page
+    // straight away — but the page itself was loaded from the old files.
+    // Reload once so it's running the new version (an unfinished invoice
+    // is saved, and comes back after Go). Only for an UPDATE: on a very
+    // first visit the first takeover is just the app being set up for
+    // offline use, so that one only marks the page as covered.
+    let covered = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!covered) { covered = true; return; }
+      if (reloaded) return;
+      reloaded = true;
+      location.reload();
+    });
     navigator.serviceWorker.register('sw.js').catch(console.error);
   }
+  document.getElementById('app-version').textContent = APP_VERSION;
 
   // All the data lives in this browser's storage. Asking for "persistent"
   // storage tells Chrome not to clear it to free up space. (Installed apps

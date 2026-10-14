@@ -74,11 +74,22 @@ const Lock = {
       else if (e.key === 'Backspace') this._press('back');
     });
 
-    // Idle: any touch, tap, scroll or key press counts as "still here".
+    // Idle: a touch, tap, scroll, key press or typing counts as "still here".
     // Capture phase, so taps inside pop-ups and the My Details page count.
     const stillHere = () => { this._lastActivity = Date.now(); };
-    ['pointerdown', 'touchstart', 'mousemove', 'keydown', 'scroll', 'input', 'wheel'].forEach(evt =>
+    ['pointerdown', 'touchstart', 'keydown', 'scroll', 'input', 'wheel'].forEach(evt =>
       document.addEventListener(evt, stillHere, { passive: true, capture: true }));
+    // A mouse only counts when it's really moved — more than 10 pixels since
+    // the last time it counted. Otherwise a pointer just resting over the app
+    // (a laptop touchpad picking up the faintest touch, or the browser's own
+    // "the page changed under the pointer" events, which don't move at all)
+    // kept the app awake forever and the start screen never came back.
+    let lastX = null, lastY = null;
+    document.addEventListener('mousemove', e => {
+      if (lastX !== null && Math.abs(e.clientX - lastX) + Math.abs(e.clientY - lastY) <= 10) return;
+      lastX = e.clientX; lastY = e.clientY;
+      stillHere();
+    }, { passive: true, capture: true });
     // One check every few seconds rather than a timer per tap.
     setInterval(() => {
       if (!this._mode && !document.hidden && Date.now() - this._lastActivity > IDLE_MS) this.showStart();

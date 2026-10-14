@@ -775,6 +775,10 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25); cursor: pointer;
 }
 .go-btn:active { background: #00544c; transform: translateY(1px); }
+.start-version {
+  position: absolute; bottom: 14px; left: 0; right: 0; text-align: center;
+  font: 12px Roboto, sans-serif; color: rgba(37, 50, 92, 0.55);
+}
 
 /* "Your unfinished invoice" banner at the top of a restored invoice form */
 .draft-banner {

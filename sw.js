@@ -4,11 +4,12 @@
    All the data lives on the device (js/api.js), so there are no server
    calls left to worry about.
 
-   TO SHIP AN UPDATE: change CACHE_NAME (e.g. v3 -> v4). The browser
+   TO SHIP AN UPDATE: change CACHE_NAME (e.g. v4 -> v5) AND APP_VERSION
+   in js/app.js to match (it's shown on the start screen). The browser
    notices this file changed, downloads the new set of files, and throws
    the old set away. Without that bump, devices keep the old version.
 ──────────────────────────────────────────────────────────── */
-const CACHE_NAME = 'invoicemate-standalone-v3';   // v3: Go button, idle return, invoice drafts
+const CACHE_NAME = 'invoicemate-standalone-v4';   // v4: steadier idle check, clean updates, version label
 
 // Relative paths, so the app works from a sub-folder address such as
 // https://<user>.github.io/InvoiceMate_PWA/ as well as from a domain root.
@@ -33,9 +34,15 @@ const APP_FILES = [
   'js/app.js'
 ];
 
-// Install — save every app file
+// Install — save every app file, fetched FRESH from the server.
+// cache: 'reload' skips the browser's ordinary download cache. Without it,
+// GitHub Pages (which tells browsers to keep files for 10 minutes) could
+// hand an update some old files and some new ones — a half-updated app.
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_FILES)));
+  e.waitUntil(
+    caches.open(CACHE_NAME).then(cache =>
+      cache.addAll(APP_FILES.map(f => new Request(f, { cache: 'reload' }))))
+  );
   self.skipWaiting();
 });
 
