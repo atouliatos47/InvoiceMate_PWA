@@ -438,7 +438,9 @@ async function saveInvoice(id) {
 
   try {
     if (id) {
-      body.status = 'draft'; // keep status on edit via detail screen
+      // No status sent: editing keeps whatever status the invoice already
+      // has. (This used to send 'draft', so editing a Paid invoice quietly
+      // turned it back into a Draft.)
       await API.updateInvoice(id, body);
       showToast('Invoice updated', 'success');
     } else {

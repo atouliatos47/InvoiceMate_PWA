@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(console.error);
+    navigator.serviceWorker.register('sw.js').catch(console.error);
   }
 
   try { App.settings = await API.getSettings(); } catch (_) {}
