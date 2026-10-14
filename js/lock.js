@@ -175,6 +175,8 @@ const Lock = {
       document.getElementById('go-btn').classList.add('hidden');
     }, 400);
     if (enteringApp && typeof resumeDraftIfAny === 'function') resumeDraftIfAny();
+    // First time ever using the app: show the App Guide once (js/guide.js).
+    if (enteringApp && typeof Guide !== 'undefined') Guide.maybeFirstRun();
   },
 
   _dots() {

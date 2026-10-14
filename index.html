@@ -48,6 +48,10 @@
     </div>
     <div class="topbar-right">
       <span id="install-btn" class="btn btn-outline hidden" style="color:#fff;border-color:rgba(255,255,255,0.5);font-size:0.8rem;padding:6px 12px">Install</span>
+      <!-- App Guide — the ⓘ icon, first in the row like the Flutter app's (js/guide.js) -->
+      <button class="topbar-icon-btn" onclick="Guide.open()" aria-label="App Guide" title="App Guide">
+        <svg viewBox="0 0 24 24"><path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+      </button>
       <!-- Statistics — the chart icon, like the Flutter app's (js/stats.js) -->
       <button class="topbar-icon-btn" onclick="Stats.open()" aria-label="Statistics" title="Statistics">
         <svg viewBox="0 0 24 24"><path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z"/></svg>
@@ -61,6 +65,9 @@
 
   <!-- ── My Details page (js/details.js) — full screen over the app ── -->
   <div id="details-page" class="md-page hidden"></div>
+
+  <!-- ── App Guide (js/guide.js) — full screen over the app ── -->
+  <div id="guide-page" class="md-page ag-page hidden"></div>
 
   <!-- ── Statistics page (js/stats.js) — full screen over the app ── -->
   <div id="stats-page" class="md-page st-page hidden"></div>
@@ -120,6 +127,7 @@
   <script src="js/pdf.js"></script>
   <script src="js/details.js"></script>
   <script src="js/stats.js"></script>
+  <script src="js/guide.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
