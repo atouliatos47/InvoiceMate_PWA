@@ -32,7 +32,9 @@ function defaultData() {
       // 'quantity' = Bill by Quantity (Qty / Unit Price columns).
       invoice_mode: 'hourly',
       currency: 'GBP', currency_symbol: '£',
-      tax_rate: 20, tax_name: 'VAT',
+      // 0 = not VAT registered, so the New Invoice page's "VAT %" box starts
+      // empty like the Flutter app's. (Was 20, from the old server schema.)
+      tax_rate: 0, tax_name: 'VAT',
       invoice_prefix: 'INV', next_invoice_no: 1,
       bank_name: '', bank_account: '', bank_sort_code: '',
       tax_number: '', self_assessment_no: '',
@@ -95,6 +97,46 @@ function calcTotals(items, taxRate) {
   const subtotal   = items.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.unit_price) || 0), 0);
   const tax_amount = round2(subtotal * (Number(taxRate) || 0) / 100);
   return { subtotal: round2(subtotal), tax_amount, total: round2(subtotal + tax_amount) };
+}
+
+/* The New Invoice page (like the Flutter app's) builds an invoice from
+   ITEMS, each with one or more dated ENTRIES, plus EXPENSES:
+     groups:   [{ description, entries: [{ date, quantity, unit_price }] }]
+     expenses: [{ description, amount }]
+   The invoice screen, totals and all three PDF templates work on a flat
+   list of lines, so this turns the structure into those lines:
+     Bill by the Hour → "Description — 14 Oct 2026", hours × rate (one line per entry)
+     Bill by Quantity → "Description", qty × price (date added only when an
+                        item has several entries, to tell them apart)
+     each expense     → "Expense: description", 1 × amount
+   The structure itself is stored too (groups/expenses) so the invoice
+   opens for editing exactly as it was typed. */
+function shortDate(d) {
+  return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+}
+function flattenLines(groups, expenses, mode) {
+  const lines = [];
+  for (const g of groups || []) {
+    const desc = (g.description || '').trim();
+    const entries = (g.entries || []).filter(e => Number(e.quantity) || Number(e.unit_price));
+    for (const e of entries) {
+      const dated = mode === 'hourly' || entries.length > 1;
+      lines.push({
+        description: [desc, dated ? shortDate(e.date) : ''].filter(Boolean).join(' — '),
+        quantity: Number(e.quantity) || 0,
+        unit_price: Number(e.unit_price) || 0
+      });
+    }
+  }
+  for (const x of expenses || []) {
+    if (!Number(x.amount) && !(x.description || '').trim()) continue;
+    lines.push({ description: `Expense: ${(x.description || '').trim() || 'expense'}`, quantity: 1, unit_price: Number(x.amount) || 0 });
+  }
+  return lines;
+}
+
+function nextAutoNumber(s) {
+  return `${s.invoice_prefix || 'INV'}-${String(s.next_invoice_no || 1).padStart(4, '0')}`;
 }
 
 function buildItems(invoiceId, items) {
@@ -197,16 +239,26 @@ const API = {
     inv.items = (inv.items || []).sort((a, b) => a.sort_order - b.sort_order);
     return inv;
   },
+  // What the next invoice will be called — the New Invoice page shows it
+  // in its (editable) Invoice Number box.
+  async nextInvoiceNumber() {
+    return nextAutoNumber(Store.load().settings);
+  },
   async createInvoice(body) {
     const d = Store.load();
     const s = d.settings;
-    // Same numbering as the server: prefix + next number padded to 4 digits.
-    const invoice_number = `${s.invoice_prefix || 'INV'}-${String(s.next_invoice_no || 1).padStart(4, '0')}`;
+    // Same numbering as the server: prefix + next number padded to 4 digits —
+    // unless a number was typed into the Invoice Number box.
+    const auto = nextAutoNumber(s);
+    const invoice_number = (body.invoice_number || '').trim() || auto;
     if (d.invoices.some(i => i.invoice_number === invoice_number)) {
-      throw new Error(`${invoice_number} already exists — change "Next Invoice No." in Settings`);
+      throw new Error(invoice_number === auto
+        ? `${invoice_number} already exists — change "Next Invoice No." in Settings`
+        : `${invoice_number} is already used by another invoice`);
     }
     const id    = Store.newId('invoice');
-    const items = buildItems(id, body.items);
+    const mode  = body.billing_mode || s.invoice_mode || 'quantity';
+    const items = buildItems(id, body.groups ? flattenLines(body.groups, body.expenses, mode) : body.items);
     const inv = {
       id, invoice_number,
       client_id:       body.client_id ? Number(body.client_id) : null,
@@ -218,23 +270,35 @@ const API = {
       // Hours/Rate or Qty/Unit Price — taken from My Details when the
       // invoice is made and kept with it, so changing the setting later
       // doesn't relabel invoices that were already sent.
-      billing_mode:    body.billing_mode || s.invoice_mode || 'quantity',
+      billing_mode:    mode,
       currency:        body.currency || 'GBP',
       currency_symbol: body.currency_symbol || '£',
       tax_rate:        Number(body.tax_rate) || 0,
       ...calcTotals(items, body.tax_rate),
       notes:           body.notes || '',
       items,
+      // The New Invoice page's own structure, kept for editing later.
+      groups:          body.groups   || null,
+      expenses:        body.expenses || null,
       created_at: now(), updated_at: now()
     };
     d.invoices.push(inv);
-    s.next_invoice_no = (Number(s.next_invoice_no) || 1) + 1;
+    // The counter only moves on when its own number was used; a hand-typed
+    // number leaves it where it was.
+    if (invoice_number === auto) s.next_invoice_no = (Number(s.next_invoice_no) || 1) + 1;
     Store.save();
     return copy(inv);
   },
   async updateInvoice(id, body) {
     const inv   = findInvoice(id);
-    const items = buildItems(inv.id, body.items);
+    const num   = (body.invoice_number || '').trim() || inv.invoice_number;
+    if (num !== inv.invoice_number && Store.load().invoices.some(i => i.invoice_number === num)) {
+      throw new Error(`${num} is already used by another invoice`);
+    }
+    const mode  = body.billing_mode || inv.billing_mode || 'quantity';
+    const items = buildItems(inv.id, body.groups ? flattenLines(body.groups, body.expenses, mode) : body.items);
+    if (body.groups) { inv.groups = body.groups; inv.expenses = body.expenses || []; }
+    inv.invoice_number = num;
     Object.assign(inv, {
       client_id:       body.client_id ? Number(body.client_id) : null,
       client_snapshot: body.client_snapshot || null,
@@ -251,6 +315,13 @@ const API = {
       items,
       updated_at: now()
     });
+    Store.save();
+    return copy(inv);
+  },
+  async patchTemplate(id, template) {
+    const inv = findInvoice(id);
+    inv.template = ['classic', 'modern', 'minimal'].includes(template) ? template : 'classic';
+    inv.updated_at = now();
     Store.save();
     return copy(inv);
   },

@@ -954,3 +954,114 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   box-shadow: 0 2px 4px rgba(33,150,243,0.3);
 }
 .md-save-all:active { background: #1e88e5; }
+
+/* ════════════════════════════════════════════════════════════
+   NEW INVOICE — copied from the Flutter app's screen (Material 3,
+   teal theme): mint app bar, mint cards on near-white, outlined boxes
+   whose label sits on the border once filled, lighter item cards,
+   teal text buttons, big teal total, "Save Invoice" at the bottom.
+   Colours sampled from the Flutter screenshots.
+═════════════════════════════════════════════════════════════ */
+.ip-page { background: #fbfafa; }
+.ip-appbar {
+  height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 4px;
+  background: #d6e5e2;
+}
+.ip-appbar h1 { font-size: 22px; font-weight: 400; color: #191c1b; margin-left: 20px; }
+.ip-body { flex: 1; overflow-y: auto; padding: 8px 0 24px; -webkit-overflow-scrolling: touch; }
+
+.ip-card {
+  --of-bg: #eff5f3;                       /* the label's "notch" matches the card */
+  background: #eff5f3; border-radius: 12px; padding: 16px 16px 20px;
+  margin: 8px max(16px, calc((100% - 720px) / 2)) 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.14), 0 1px 3px rgba(0,0,0,0.06);
+}
+.ip-card h2 { font-size: 22px; font-weight: 400; color: #191c1b; margin: 2px 0 16px; }
+.ip-card-head { display: flex; align-items: center; justify-content: space-between; margin: 2px 0 16px; }
+.ip-card-head h2 { margin: 0; }
+.ip-divider { border: none; border-top: 1px solid #c4ccc9; margin: 18px 0; }
+.ip-divider-tight { margin: 4px 0 14px; }
+
+.ip-text-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: none; background: transparent; color: #006a60; cursor: pointer;
+  font: 500 14px Roboto, sans-serif; padding: 8px 12px; border-radius: 20px;
+}
+.ip-text-btn svg { width: 18px; height: 18px; fill: #006a60; }
+.ip-text-btn:active { background: rgba(0,106,96,0.1); }
+
+/* An item: a lighter card inside the Items card */
+.ip-item {
+  --of-bg: #f5f9f7;
+  position: relative; background: #f5f9f7; border-radius: 12px;
+  padding: 12px 12px 4px; margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.16);
+}
+.ip-entry {
+  display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) auto;
+  gap: 8px; align-items: start;
+}
+.ip-entry .of { margin-bottom: 8px; }
+.ip-entry .of input { height: 50px; font-size: 15px; }
+.ip-item-foot { text-align: right; }
+.ip-expense {
+  display: grid; grid-template-columns: minmax(0,1.6fr) minmax(0,1fr) auto; gap: 8px; align-items: start;
+}
+.ip-remove {
+  width: 32px; height: 32px; margin-top: 9px; border: none; border-radius: 50%;
+  background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.ip-remove svg { width: 18px; height: 18px; fill: #6f7975; }
+.ip-remove:active { background: rgba(0,0,0,0.08); }
+/* Remove-item: a small round badge on the item card's corner */
+.ip-remove-item {
+  position: absolute; top: -10px; right: -10px; margin: 0; z-index: 1;
+  width: 26px; height: 26px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+.ip-remove-item svg { width: 16px; height: 16px; }
+
+/* Outlined text box with a floating label */
+.of { position: relative; margin-bottom: 16px; }
+.of input {
+  width: 100%; height: 56px; padding: 0 14px;
+  border: 1px solid #6f7975; border-radius: 4px; background: transparent; outline: none;
+  font: 400 16px Roboto, 'Segoe UI', sans-serif; color: #191c1b;
+  -moz-appearance: textfield;
+}
+.of input::-webkit-outer-spin-button, .of input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.of input:focus { border: 2px solid #006a60; padding: 0 13px; }
+.of label {
+  position: absolute; left: 10px; top: 28px; transform: translateY(-50%);
+  padding: 0 4px; max-width: calc(100% - 20px); overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font: 400 16px Roboto, 'Segoe UI', sans-serif; color: #3f4946; pointer-events: none;
+  transition: top 0.15s, font-size 0.15s, color 0.15s;
+}
+.ip-entry .of label { top: 25px; }
+.of input:focus + label, .of input:not(:placeholder-shown) + label {
+  top: 0; font-size: 12px; background: var(--of-bg, #fff);
+}
+.of input:focus + label { color: #006a60; }
+
+/* Date box: shows "14 Oct 2026"; an invisible real date box on top opens the phone's calendar */
+.of-date-text { cursor: pointer; }
+.of-icon .of-date-text { padding-right: 46px; }
+.of-trailing { position: absolute; right: 12px; top: 28px; transform: translateY(-50%); width: 24px; height: 24px; fill: #3f4946; pointer-events: none; }
+.of-date-native {
+  position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+  border: none; padding: 0; z-index: 2;
+}
+
+.ip-subtotal { text-align: center; font-size: 16px; color: #191c1b; margin-top: 18px; }
+.ip-vat-line { text-align: center; font-size: 14px; color: #3f4946; margin-top: 4px; }
+.ip-vat-line:empty { display: none; }
+.ip-total { text-align: center; font-size: 24px; font-weight: 700; color: #006a60; margin-top: 10px; }
+
+.ip-save {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: calc(100% - 32px); max-width: 720px; height: 56px; margin: 8px auto 32px;
+  border: none; border-radius: 16px; background: #e3eeea; color: #191c1b; cursor: pointer;
+  font: 500 16px Roboto, sans-serif; box-shadow: 0 1px 3px rgba(0,0,0,0.14);
+}
+.ip-save svg { width: 20px; height: 20px; fill: #191c1b; }
+.ip-save:active { background: #d3e3de; }
+.ip-body .draft-banner { margin: 8px max(16px, calc((100% - 720px) / 2)) 4px; }

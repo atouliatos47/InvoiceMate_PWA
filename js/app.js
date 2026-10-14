@@ -6,7 +6,7 @@ const App = {
 
 // Shown small on the start screen, so it's easy to check which version a
 // device is running. Keep in step with CACHE_NAME in sw.js.
-const APP_VERSION = 'v4';
+const APP_VERSION = 'v5';
 
 /* ── Toast ──────────────────────────────────────────────── */
 function showToast(msg, type = '') {
@@ -27,13 +27,9 @@ function openModal(html, title = '') {
 }
 
 function closeModal() {
-  // Closing the invoice form any way other than Create/Save or Cancel
-  // (the ✕, or a tap outside the pop-up) keeps what was typed — say so.
-  const formOpen = !!document.getElementById('if-client');
   document.getElementById('modal-overlay').classList.add('hidden');
   document.getElementById('modal-content').innerHTML = '';
   document.body.style.overflow = '';
-  if (formOpen && Draft.get()) showToast('Unfinished invoice kept — it opens again where you left off');
 }
 
 /* ── Navigation ─────────────────────────────────────────── */
