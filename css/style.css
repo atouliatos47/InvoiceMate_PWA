@@ -1409,3 +1409,31 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .agm-tax { height: 88.3px; margin: 9.2px 9.7px 0 9.2px; padding: 0 9.9px 0 9.2px; background: #FFF3E0; border: 1.5px solid #FFCC80; border-radius: 10px; }
 .agm-tax .agm-chart-title { padding-top: 9.5px; margin-bottom: 7.7px; }
 .agm-tax > div { display: flex; justify-content: space-between; font-size: 11px; line-height: 15px; }
+
+/* Statistics: Total Income / Paid Income cards and the Tax Summary — the
+   Flutter app's Income Tracker look (as on the App Guide's last page). */
+.st-body > .st-kicker-out, .st-body > .st-tiles, .st-body > .st-tax {
+  margin-left: max(16px, calc((100% - 720px) / 2)); margin-right: max(16px, calc((100% - 720px) / 2));
+}
+.st-kicker-out { margin-top: 4px; margin-bottom: 8px; }
+.st-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.st-tiles .st-card { margin: 0; }
+.st-tile { padding: 14px; min-width: 0; }
+.st-tile-label { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.9rem; }
+.st-tile-label svg { width: 19px; height: 19px; fill: currentColor; flex-shrink: 0; }
+.st-tile-amt { margin-top: 8px; font-size: clamp(1.05rem, 5.4vw, 1.45rem); font-weight: 800; overflow: hidden; text-overflow: ellipsis; color: var(--text); line-height: 1.15; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.st-tile-sub { margin-top: 2px; font-size: 0.78rem; color: var(--text-muted); }
+
+.st-tax {
+  background: #FFF3E0; border: 1.5px solid #FFCC80; border-radius: var(--radius);
+  padding: 14px 16px 12px; margin-bottom: 12px;
+}
+.st-tax h3 { display: flex; align-items: center; gap: 8px; font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 10px; }
+.st-tax h3 svg { width: 21px; height: 21px; fill: #FF9800; flex-shrink: 0; }
+.st-tax-row { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 0.92rem; color: var(--text); }
+.st-tax-row b { font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.st-good { color: #2E7D32; }   /* the Flutter green / red / blue, a shade darker so they read well on the orange */
+.st-bad  { color: #C62828; }
+.st-blue { color: #1565C0; }
+.st-tax-hint { margin: 0 0 8px; padding: 8px 10px; border-radius: 8px; background: rgba(255,152,0,0.14); font-size: 0.82rem; color: #6d4c00; }
+.st-tax-note { margin-top: 10px; font-size: 0.74rem; line-height: 1.45; color: #7a5a2a; }

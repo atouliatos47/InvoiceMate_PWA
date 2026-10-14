@@ -94,12 +94,19 @@ const Stats = {
   /* ── Adding up ────────────────────────────────────────── */
   _sum(list) {
     const n = v => parseFloat(v) || 0;
-    const t = { total: 0, vat: 0, expenses: 0, paid: 0, count: list.length, anyPaid: false };
+    const t = { total: 0, vat: 0, expenses: 0, paid: 0, paidWork: 0, count: list.length, anyPaid: false };
     for (const inv of list) {
+      const exp = (inv.expenses || []).reduce((s, x) => s + n(x.amount), 0);
       t.total += n(inv.total);
       t.vat   += n(inv.tax_amount);
-      t.expenses += (inv.expenses || []).reduce((s, x) => s + n(x.amount), 0);
-      if (inv.status === 'paid') { t.paid += n(inv.total); t.anyPaid = true; }
+      t.expenses += exp;
+      if (inv.status === 'paid') {
+        t.paid += n(inv.total);
+        // What the work itself brought in on paid invoices: no VAT (that's
+        // HMRC's) and no re-charged expenses (money in = money out).
+        t.paidWork += n(inv.total) - n(inv.tax_amount) - exp;
+        t.anyPaid = true;
+      }
     }
     t.work = t.total - t.vat - t.expenses;        // what the work itself brought in
     return t;
@@ -159,6 +166,7 @@ const Stats = {
           ${this.yearsCard(years)}
           ${this.yearCard(yr, years)}
           ${this.monthsCard(yr)}
+          ${this.taxCard(yr)}
           ${this.clientsCard(yr)}`}
       </div>`;
     this._showMonth();
@@ -185,7 +193,6 @@ const Stats = {
   // The chosen year in detail.
   yearCard(yr) {
     const current = this.isCurrent(yr.key);
-    const name = this.mode === 'calendar' ? yr.key : `the ${this.label(yr.key)} tax year`;
     let compare = '';
     const before = current ? this._lastYearSoFar(yr.key) : (this.years().find(y => y.key === yr.key - 1) || null);
     if (before && before.total > 0) {
@@ -200,21 +207,51 @@ const Stats = {
     ];
     if (yr.expenses) facts.push(['Expenses', this.money(yr.expenses)]);
     if (yr.vat)      facts.push(['VAT', this.money(yr.vat)]);
-    if (yr.anyPaid) {
-      facts.push(['Paid', this.money(yr.paid)]);
-      facts.push(['Still to be paid', this.money(yr.total - yr.paid)]);
-    }
+    if (yr.anyPaid)  facts.push(['Still to be paid', this.money(yr.total - yr.paid)]);
+    // Total Income / Paid Income side by side, like the Flutter app's Income Tracker.
     return `
+      <div class="st-kicker st-kicker-out">${this.mode === 'tax'
+        ? `Tax year ${this.label(yr.key)} · 6 Apr ${yr.key} – 5 Apr ${yr.key + 1}`
+        : `${yr.key} · 1 Jan – 31 Dec`}</div>
+      <div class="st-tiles">
+        <section class="st-card st-tile">
+          <div class="st-tile-label" style="color:#1976D2">${gIcon('trend')}Total Income</div>
+          <div class="st-tile-amt" id="st-total">${this.money(yr.total)}</div>
+          <div class="st-tile-sub">All invoices${current ? ' · so far' : ''}</div>
+        </section>
+        <section class="st-card st-tile">
+          <div class="st-tile-label" style="color:#2E7D32">${gIcon('money')}Paid Income</div>
+          <div class="st-tile-amt" id="st-paid">${this.money(yr.paid)}</div>
+          <div class="st-tile-sub">Tax reportable</div>
+        </section>
+      </div>
       <section class="st-card">
-        <div class="st-kicker">${this.mode === 'tax'
-          ? `Tax year ${this.label(yr.key)} · 6 Apr ${yr.key} – 5 Apr ${yr.key + 1}`
-          : `${yr.key} · 1 Jan – 31 Dec`}</div>
-        <div class="st-hero">${this.money(yr.total)}</div>
-        <div class="st-hero-sub">invoiced in ${name}${current ? ' so far' : ''}</div>
         ${compare}
         <div class="st-facts">
           ${facts.map(([k, v]) => `<div><span>${k}</span><strong>${v}</strong></div>`).join('')}
         </div>
+      </section>`;
+  },
+
+  // Tax Summary, like the Flutter app's — but with fairer numbers: tax is
+  // worked out on money actually received (paid invoices), after the
+  // tax-free allowance, with self-employed National Insurance, and the VAT
+  // that's really on the invoices (not 20% of everything).
+  taxCard(yr) {
+    const taxable = yr.paidWork;
+    const { incomeTax, ni } = stUkTax(taxable);
+    return `
+      <section class="st-tax">
+        <h3>${gIcon('bank')}Tax Summary (${this.label(yr.key)})</h3>
+        ${yr.anyPaid ? '' : `<p class="st-tax-hint">Mark invoices as <strong>Paid</strong> to see this: tax is worked out on money actually received.</p>`}
+        <div class="st-tax-row"><span>Taxable Income (Paid):</span><b class="st-good" id="st-taxable">${this.money(taxable)}</b></div>
+        <div class="st-tax-row"><span>Est. Income Tax:</span><b class="st-bad" id="st-it">${this.money(incomeTax)}</b></div>
+        <div class="st-tax-row"><span>Est. National Insurance:</span><b class="st-bad" id="st-ni">${this.money(ni)}</b></div>
+        <div class="st-tax-row"><span>VAT charged:</span><b class="st-blue" id="st-vat">${this.money(yr.vat)}</b></div>
+        <p class="st-tax-note">A rough guide using 2026/27 UK rates: the first £12,570 is tax-free, then Income Tax at 20%
+          (40% over £50,270) and National Insurance at 6%. It assumes this is your only income and leaves out
+          other business costs.${this.mode === 'calendar' ? ' Tax years run 6 April to 5 April, so pick “Tax year” at the top for the closest figure.' : ''}
+          Not tax advice: check with an accountant.</p>
       </section>`;
   },
 
@@ -327,6 +364,24 @@ const Stats = {
     this._showMonth();
   }
 };
+
+// Rough UK Income Tax + Class 4 National Insurance on a year's profit
+// (England, Wales and Northern Ireland, 2026/27 — these figures have been
+// frozen since 2021/22, checked October 2026):
+// • Personal allowance £12,570 tax-free, cut by £1 for every £2 over £100,000.
+// • Income Tax: 20% on the first £37,700 above that, 40% up to £125,140, 45% above.
+// • Class 4 NI: 6% on profits from £12,570 to £50,270, 2% above.
+function stUkTax(profit) {
+  const p = Math.max(0, profit);
+  const allowance = Math.max(0, 12570 - Math.max(0, p - 100000) / 2);
+  const taxable = Math.max(0, p - allowance);
+  const incomeTax = Math.min(taxable, 37700) * 0.20
+                  + Math.max(0, Math.min(taxable, 125140) - 37700) * 0.40
+                  + Math.max(0, taxable - 125140) * 0.45;
+  const ni = Math.max(0, Math.min(p, 50270) - 12570) * 0.06
+           + Math.max(0, p - 50270) * 0.02;
+  return { incomeTax: Math.round(incomeTax * 100) / 100, ni: Math.round(ni * 100) / 100 };
+}
 
 // A round number just above the biggest month, for the chart's top line:
 // 1,840 → 2,000; 4,350 → 5,000; 130 → 150.

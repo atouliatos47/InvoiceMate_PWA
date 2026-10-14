@@ -9,7 +9,7 @@
    notices this file changed, downloads the new set of files, and throws
    the old set away. Without that bump, devices keep the old version.
 ──────────────────────────────────────────────────────────── */
-const CACHE_NAME = 'invoicemate-standalone-v15';   // v15: App Guide like the Flutter app
+const CACHE_NAME = 'invoicemate-standalone-v16';   // v16: Statistics gets Total / Paid Income and a Tax Summary
 
 // Relative paths, so the app works from a sub-folder address such as
 // https://<user>.github.io/InvoiceMate_PWA/ as well as from a domain root.
