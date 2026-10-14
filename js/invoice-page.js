@@ -50,8 +50,8 @@ const IP = {
       invoice_number: number,
       issue_date: todayISO(),
       client_name: '',
-      // Empty like the Flutter app's "VAT %" box unless a default rate is set.
-      tax_rate: Number(settings.tax_rate) > 0 ? String(settings.tax_rate) : '',
+      // Always empty, like Hours / Rate — VAT only counts once it's typed in.
+      tax_rate: '',
       billing_mode: settings.invoice_mode || 'hourly',
       groups: [{ description: '', entries: [{ date: todayISO(), quantity: '', unit_price: '' }] }],
       expenses: []

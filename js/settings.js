@@ -11,9 +11,6 @@ async function renderSettings() {
   try {
     const s = await API.getSettings();
     App.settings = s;
-    // 0 is a real VAT rate (not VAT registered), so only fall back to 20
-    // when there's no number at all — "s.tax_rate || 20" turned 0 into 20.
-    const taxRate = Number.isFinite(Number(s.tax_rate)) && s.tax_rate !== '' && s.tax_rate !== null ? Number(s.tax_rate) : 20;
 
     el.innerHTML = `
       <!-- Shortcut to My Details -->
@@ -53,17 +50,12 @@ async function renderSettings() {
       <!-- Tax -->
       <div class="settings-section">
         <div class="settings-section-title">Tax</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Tax Name</label>
-            <input class="form-control" id="s-tax-name" value="${escHtml(s.tax_name||'VAT')}" placeholder="VAT" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Default Tax Rate (%)</label>
-            <input class="form-control" id="s-tax-rate" type="number" value="${taxRate}" min="0" max="100" step="0.1" />
-          </div>
+        <div class="form-group">
+          <label class="form-label">Tax Name</label>
+          <input class="form-control" id="s-tax-name" value="${escHtml(s.tax_name||'VAT')}" placeholder="VAT" />
         </div>
-        <div class="settings-note" style="margin-bottom:0">Not VAT registered? Set the rate to 0.</div>
+        <!-- No default rate: the VAT % is typed on each invoice, like the Flutter app. -->
+        <div class="settings-note" style="margin-bottom:0">The VAT % is typed on each invoice. Leave it empty if you're not VAT registered.</div>
       </div>
 
       <button class="btn btn-primary btn-full" onclick="saveSettings()" style="margin-bottom:24px">
@@ -112,14 +104,12 @@ async function renderSettings() {
 // My Details owns (business, address, currency, bank, tax numbers) is
 // left exactly as it was.
 async function saveSettings() {
-  const rate = parseFloat(document.getElementById('s-tax-rate').value);
   const body = {
     invoice_prefix:   document.getElementById('s-inv-prefix').value.trim() || 'INV',
     next_invoice_no:  parseInt(document.getElementById('s-inv-next').value) || 1,
     payment_terms:    document.getElementById('s-payment-terms').value.trim(),
     notes:            document.getElementById('s-notes').value.trim(),
-    tax_name:         document.getElementById('s-tax-name').value.trim() || 'VAT',
-    tax_rate:         Number.isFinite(rate) ? rate : 20     // 0 stays 0
+    tax_name:         document.getElementById('s-tax-name').value.trim() || 'VAT'
   };
 
   try {
