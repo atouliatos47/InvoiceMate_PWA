@@ -167,13 +167,23 @@ const MyDetails = {
         `)}
 
         <button class="md-save-all" onclick="MyDetails.save()">Save All Details</button>
+
+        <!-- The old Settings tab's home now: backup, PIN, numbering -->
+        <button class="md-more-link" onclick="MyDetails.openMore()">
+          ${mdIcon('settings')}
+          <span><strong>Backup, PIN lock &amp; numbering</strong><small>Save a backup file, set a PIN, change the invoice numbers</small></span>
+          <svg class="md-more-arrow" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+        </button>
       </div>`;
 
     this.currencyChanged();
     // Material 3 tints the app bar once the page scrolls under it.
     const body = document.getElementById('md-body');
-    body.addEventListener('scroll', () =>
-      document.getElementById('md-appbar').classList.toggle('scrolled', body.scrollTop > 4));
+    // (A last scroll can arrive just after the page closed — hence the check.)
+    body.addEventListener('scroll', () => {
+      const bar = document.getElementById('md-appbar');
+      if (bar) bar.classList.toggle('scrolled', body.scrollTop > 4);
+    });
 
     page.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -187,6 +197,13 @@ const MyDetails = {
   // handler below does the actual closing (same path as the phone's Back).
   close() {
     if (this._open) history.back();
+  },
+
+  // "Backup, PIN lock & numbering": close this page and show what used to
+  // be the Settings tab underneath.
+  openMore() {
+    this.close();
+    navigate('settings');
   },
 
   _hide() {

@@ -9,7 +9,7 @@
    notices this file changed, downloads the new set of files, and throws
    the old set away. Without that bump, devices keep the old version.
 ──────────────────────────────────────────────────────────── */
-const CACHE_NAME = 'invoicemate-standalone-v8';   // v8: no due date, no automatic 30-days note
+const CACHE_NAME = 'invoicemate-standalone-v9';   // v9: Invoices | Home | Clients bar, Settings moved into My Details
 
 // Relative paths, so the app works from a sub-folder address such as
 // https://<user>.github.io/InvoiceMate_PWA/ as well as from a domain root.

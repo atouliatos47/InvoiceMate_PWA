@@ -79,7 +79,7 @@ html, body {
 /* ── Main / Views ───────────────────────────────────────── */
 main {
   margin-top: var(--top-h);
-  margin-bottom: var(--nav-h);
+  margin-bottom: calc(var(--nav-h) + 20px);   /* + room for the raised Home button */
   min-height: calc(100vh - var(--top-h) - var(--nav-h));
   overflow-y: auto;
 }
@@ -131,6 +131,24 @@ main {
 
 .nav-btn.active { color: var(--accent); }
 .nav-btn:hover  { color: var(--accent); }
+
+/* Home — a bigger round teal button in the middle, sitting a little above
+   the bar. The white ring (the bar's own colour) makes it look cut into
+   the bar. */
+.nav-home { justify-content: flex-end; padding-bottom: 8px; gap: 2px; }
+.nav-home-circle {
+  width: 60px; height: 60px; margin-top: -30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(145deg, #14b8b2, var(--accent-hover));
+  border: 5px solid var(--bg2);
+  box-shadow: 0 4px 12px rgba(14,165,160,0.35);
+  transition: transform 0.15s, box-shadow 0.2s;
+}
+.nav-home .nav-home-circle svg { width: 26px; height: 26px; stroke: #fff; stroke-width: 2.2; }
+.nav-home:active .nav-home-circle { transform: scale(0.93); }
+/* On the Home screen: a soft teal glow round it */
+.nav-home.active .nav-home-circle { box-shadow: 0 4px 14px rgba(14,165,160,0.45), 0 0 0 3px rgba(14,165,160,0.18); }
+.nav-home.active { font-weight: 700; }
 
 /* ── Buttons ────────────────────────────────────────────── */
 .btn {
@@ -954,6 +972,20 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   box-shadow: 0 2px 4px rgba(33,150,243,0.3);
 }
 .md-save-all:active { background: #1e88e5; }
+
+/* "Backup, PIN lock & numbering" row under Save All Details */
+.md-more-link {
+  display: flex; align-items: center; gap: 14px; text-align: left;
+  width: calc(100% - 32px); max-width: 720px; margin: 0 auto 28px; padding: 14px 16px;
+  background: #fff; border: none; border-radius: 12px; cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-family: Roboto, sans-serif;
+}
+.md-more-link > svg:first-child { width: 22px; height: 22px; fill: #1e88e5; flex-shrink: 0; }
+.md-more-link span { flex: 1; min-width: 0; }
+.md-more-link strong { display: block; font-size: 15px; font-weight: 500; color: #1c1b1f; }
+.md-more-link small  { display: block; font-size: 13px; color: #616161; margin-top: 2px; }
+.md-more-arrow { width: 22px; height: 22px; fill: #757575; flex-shrink: 0; }
+.md-more-link:active { background: #f0f0f0; }
 
 /* ════════════════════════════════════════════════════════════
    NEW INVOICE — copied from the Flutter app's screen (Material 3,

@@ -2,7 +2,8 @@
    Business name, address, currency and bank details now live on the
    My Details page (js/details.js), laid out like the Flutter app's.
    Settings keeps the rest: invoice numbering and notes, VAT, App Lock
-   and Backup.
+   and Backup. There's no Settings tab any more — this page is opened
+   from "Backup, PIN lock & numbering" at the bottom of My Details.
 ──────────────────────────────────────────────────────────── */
 async function renderSettings() {
   const el = document.getElementById('view-settings');
