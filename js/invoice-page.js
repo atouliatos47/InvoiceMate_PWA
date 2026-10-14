@@ -36,7 +36,12 @@ const IP_ICONS = {
   close:    'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'
 };
 const ipIcon = (name, cls = '') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${IP_ICONS[name]}"/></svg>`;
-const todayISO = () => new Date().toISOString().slice(0, 10);
+// Today's date where the phone is (toISOString alone gives the UTC date,
+// which in summer is still "yesterday" between midnight and 1am).
+const todayISO = () => {
+  const now = new Date();
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+};
 
 const IP = {
   open: false,

@@ -1160,3 +1160,106 @@ textarea.form-control { resize: vertical; min-height: 80px; }
   .ip-entry + .ip-entry { border-top: 1px solid #dde4e1; padding-top: 14px; }
   .ip-footer { padding: 8px 10px 10px; }
 }
+
+/* ════════════════════════════════════════════════════════════
+   STATISTICS (js/stats.js) — white cards on the app's light grey, the
+   app's teal for the bars (checked: clear against white, not greyish).
+   Numbers are always in ordinary text colours; teal only marks the bars.
+═════════════════════════════════════════════════════════════ */
+.st-page { background: var(--bg); }
+.st-body { padding: 12px 0 28px; }
+.st-body > * { max-width: 720px; margin-left: auto; margin-right: auto; }
+
+/* Calendar year | Tax year */
+.st-toggle {
+  display: flex; gap: 4px; padding: 4px; margin: 4px 16px 12px;
+  background: var(--bg3); border-radius: 12px;
+}
+.st-body > .st-toggle { margin-left: max(16px, calc((100% - 720px) / 2)); margin-right: max(16px, calc((100% - 720px) / 2)); }
+.st-toggle button {
+  flex: 1; border: none; background: transparent; border-radius: 9px; padding: 9px 6px; cursor: pointer;
+  font: 600 14px var(--font); color: var(--text-muted); line-height: 1.2;
+}
+.st-toggle button small { display: block; font-size: 11px; font-weight: 500; opacity: 0.85; }
+.st-toggle button.on { background: var(--bg2); color: var(--text); box-shadow: var(--shadow); }
+
+.st-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 16px; margin: 0 16px 12px;
+}
+.st-body > .st-card { margin-left: max(16px, calc((100% - 720px) / 2)); margin-right: max(16px, calc((100% - 720px) / 2)); }
+.st-card h2 { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 12px; }
+.st-empty strong { display: block; font-size: 1rem; margin-bottom: 4px; }
+.st-empty span { color: var(--text-muted); font-size: 0.9rem; }
+
+/* Year by year — one row per year: name, bar, amount */
+.st-years { display: flex; flex-direction: column; gap: 4px; }
+.st-year {
+  display: grid; grid-template-columns: 74px 1fr auto; align-items: center; gap: 10px;
+  width: 100%; padding: 9px 10px; border: 1px solid transparent; border-radius: 8px;
+  background: transparent; cursor: pointer; text-align: left; font-family: var(--font);
+}
+.st-year:hover { background: var(--bg); }
+.st-year.on { background: #e9f7f6; border-color: #bfe6e3; }
+.st-year-name { font-weight: 700; color: var(--text); font-size: 0.95rem; white-space: nowrap; }
+.st-year-name small { display: block; font-weight: 500; font-size: 0.7rem; color: var(--text-muted); }
+.st-year-track, .st-client-track { display: block; height: 10px; background: var(--bg3); border-radius: 0 4px 4px 0; overflow: hidden; }
+.st-year-bar { display: block; height: 100%; background: var(--accent); border-radius: 0 4px 4px 0; }
+.st-year-amt { font-weight: 600; color: var(--text); font-size: 0.92rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* The chosen year: big total, comparison, the breakdown */
+.st-kicker { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; }
+.st-hero { font-size: 2.2rem; font-weight: 800; color: var(--text); line-height: 1.15; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.st-hero-sub { color: var(--text-muted); font-size: 0.9rem; }
+.st-compare { margin-top: 8px; font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.st-facts {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 14px;
+}
+.st-facts > div { background: var(--bg); border-radius: 8px; padding: 9px 11px; }
+.st-facts span { display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; font-weight: 600; }
+.st-facts strong { display: block; font-size: 1rem; color: var(--text); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+/* Month by month — bars ≤ 24px wide, rounded top, square at the baseline,
+   two hairline gridlines; the whole column is the tap target. */
+.st-readout { min-height: 22px; margin-bottom: 10px; font-size: 0.92rem; color: var(--text); }
+.st-readout span { color: var(--text-muted); margin-left: 6px; font-variant-numeric: tabular-nums; }
+.st-chart { position: relative; height: 170px; margin: 18px 0 0 46px; border-bottom: 1px solid #c9cfd6; }   /* 46px on the left for the amounts */
+.st-grid { position: absolute; inset: 0; pointer-events: none; }
+.st-gridline { position: absolute; left: 0; right: 0; border-top: 1px solid var(--border); }
+/* The amounts sit to the left of the chart, level with their line — never under a bar */
+.st-gridline span { position: absolute; right: calc(100% + 6px); top: -8px; font-size: 0.7rem; line-height: 1; color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.st-bars { position: absolute; inset: 0; display: flex; gap: 2px; }
+.st-col {
+  flex: 1; min-width: 0; height: 100%; display: flex; align-items: flex-end; justify-content: center;
+  border: none; background: transparent; cursor: pointer; padding: 0; border-radius: 6px 6px 0 0;
+}
+.st-col:hover { background: rgba(14,165,160,0.06); }
+.st-col.on { background: rgba(14,165,160,0.13); }   /* the picked month: a tinted column + bold label */
+.st-bar { display: block; width: min(24px, 70%); background: var(--accent); border-radius: 4px 4px 0 0; }
+.st-xlabels { display: flex; gap: 2px; margin: 6px 0 0 46px; }
+.st-xlabels span { flex: 1; min-width: 0; text-align: center; font-size: 0.7rem; color: var(--text-muted); }
+.st-xlabels span.on { color: var(--text); font-weight: 700; }
+.st-xlabels b { font-weight: inherit; }
+.st-x-short { display: none; }
+@media (max-width: 480px) {
+  .st-x-long  { display: none; }
+  .st-x-short { display: inline; }
+}
+
+.st-list { margin-top: 14px; font-size: 0.88rem; }
+.st-list summary { cursor: pointer; color: var(--accent-hover); font-weight: 600; padding: 4px 0; }
+.st-list table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.st-list td { padding: 6px 4px; border-top: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+.st-list td:nth-child(2) { color: var(--text-muted); }
+.st-list td:last-child { text-align: right; font-weight: 600; }
+.st-list-total td { font-weight: 700; border-top: 2px solid #c9cfd6; }
+
+/* Top clients */
+.st-client { padding: 8px 0; }
+.st-client + .st-client { border-top: 1px solid var(--border); }
+.st-client-row { display: flex; justify-content: space-between; gap: 10px; }
+.st-client-name { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-client-amt { font-weight: 600; color: var(--text); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.st-client-sub { font-size: 0.78rem; color: var(--text-muted); margin: 1px 0 6px; }
+.st-client-track { height: 6px; }
+.st-more { font-size: 0.82rem; color: var(--text-muted); margin-top: 6px; }
