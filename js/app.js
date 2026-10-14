@@ -6,7 +6,7 @@ const App = {
 
 // Shown small on the start screen, so it's easy to check which version a
 // device is running. Keep in step with CACHE_NAME in sw.js.
-const APP_VERSION = 'v6';   // keep in step with CACHE_NAME in sw.js
+const APP_VERSION = 'v7';   // keep in step with CACHE_NAME in sw.js
 
 /* ── Toast ──────────────────────────────────────────────── */
 function showToast(msg, type = '') {

@@ -199,9 +199,13 @@ const IP = {
           <div class="ip-vat-line" id="ip-vat-line"></div>
           <div class="ip-total" id="ip-total"></div>
         </section>
+      </div>
 
+      <!-- Pinned under the scrolling part, so Save is always on screen —
+           on a phone there's no hunting for it at the very bottom. -->
+      <footer class="ip-footer">
         <button class="ip-save" onclick="IP.save()">${ipIcon('save')}Save Invoice</button>
-      </div>`;
+      </footer>`;
 
     this.renderItems();
     this.renderExpenses();
@@ -221,10 +225,10 @@ const IP = {
         ${this.field(`g.${gi}.description`, 'Description', g.description)}
         <hr class="ip-divider ip-divider-tight" />
         ${g.entries.map((e, ei) => `
-          <div class="ip-entry">
+          <div class="ip-entry ${g.entries.length > 1 ? 'ip-entry-x' : ''}">
             ${this.dateField(`g.${gi}.e.${ei}.date`, 'Date', e.date, false)}
-            ${this.field(`g.${gi}.e.${ei}.quantity`,   L.qty,   e.quantity,   { type: 'number', inputmode: 'decimal' })}
-            ${this.field(`g.${gi}.e.${ei}.unit_price`, L.price, e.unit_price, { type: 'number', inputmode: 'decimal' })}
+            ${this.field(`g.${gi}.e.${ei}.quantity`,   L.qty,   e.quantity,   { type: 'number', inputmode: 'decimal', cls: 'of-qty' })}
+            ${this.field(`g.${gi}.e.${ei}.unit_price`, L.price, e.unit_price, { type: 'number', inputmode: 'decimal', cls: 'of-price' })}
             ${g.entries.length > 1 ? `<button class="ip-remove" onclick="IP.removeEntry(${gi}, ${ei})" aria-label="Remove entry">${ipIcon('close')}</button>` : ''}
           </div>`).join('')}
         <div class="ip-item-foot">
