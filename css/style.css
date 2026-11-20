@@ -1464,3 +1464,18 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .share-hint { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin: 6px 0 14px; }
 .share-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .share-actions .btn { min-width: 130px; }
+
+/* ── Server copy (js/sync.js) ── */
+.sync-status { color: var(--text); }
+.sync-status .settings-actions { margin-top: 8px; }
+.sync-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
+.sync-dot.ok   { background: var(--success); }
+.sync-dot.busy { background: var(--info); animation: sync-pulse 1s ease-in-out infinite alternate; }
+.sync-dot.wait { background: var(--warning); }
+.sync-dot.bad  { background: var(--danger); }
+@keyframes sync-pulse { from { opacity: 1; } to { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .sync-dot.busy { animation: none; } }
+.sync-why  { font-size: 0.9rem; color: var(--text); line-height: 1.45; margin: 2px 0 14px; }
+.sync-choice { display: flex; flex-direction: column; gap: 10px; }
+.sync-choice .btn { white-space: normal; height: auto; min-height: 44px; padding-top: 10px; padding-bottom: 10px; }
+.sync-note { font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin-top: 12px; }

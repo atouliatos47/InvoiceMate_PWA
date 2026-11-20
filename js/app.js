@@ -6,7 +6,7 @@ const App = {
 
 // Shown small on the start screen, so it's easy to check which version a
 // device is running. Keep in step with CACHE_NAME in sw.js.
-const APP_VERSION = 'v18';   // keep in step with CACHE_NAME in sw.js
+const APP_VERSION = 'v19';   // keep in step with CACHE_NAME in sw.js
 
 /* ── Toast ──────────────────────────────────────────────── */
 function showToast(msg, type = '') {
@@ -307,6 +307,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (navigator.storage && navigator.storage.persist) {
     navigator.storage.persist().catch(() => {});
   }
+
+  // The copy on the home server (js/sync.js): a new tablet waits a moment
+  // here for its invoices; on GitHub Pages it finds no server and carries on.
+  try { await Sync.boot(); } catch (err) { console.error(err); }
 
   try { App.settings = await API.getSettings(); } catch (_) {}
 

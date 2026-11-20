@@ -1,7 +1,8 @@
 # InvoiceMate
 
-A simple invoice app for self-employed people. It runs **entirely on the device**:
-no server, no database, no account, and it works with no internet once installed.
+A simple invoice app for self-employed people. It runs **on the device**: no
+database, no account, and it works with no internet once installed. (Run from
+the included `server.js`, it also keeps a copy on your own server — see below.)
 Each phone or tablet keeps its own separate copy of the data.
 
 Built with plain HTML/CSS/JavaScript as a Progressive Web App (PWA), so it installs
@@ -48,6 +49,33 @@ The PIN can't be recovered. "Forgot?" on the lock screen resets the app (deletin
 data on that device). Restore a backup file afterwards.
 
 ---
+
+## Running it on the home server (with a server copy)
+
+On a static host (GitHub Pages) the app keeps everything on the device only.
+Run from `server.js` instead, it **also keeps a copy of each person's data on
+the server**, sent after every change (`js/sync.js`). The device still comes
+first: the app works fully offline, and changes go to the server when it's back
+online. A new or reset tablet gets its invoices back by itself.
+
+- Who is who comes from **Cloudflare Access** (the email-code login), which
+  passes the email to the server in `Cf-Access-Authenticated-User-Email`.
+  Each email has its own file, so people never see each other's invoices.
+- The server listens on **127.0.0.1 only**, so the Cloudflare tunnel on the same
+  machine is the only way in (that's what makes the email header trustworthy).
+- Data lives **outside** the app folder, in `~/invoicemate-data/` (one
+  `<email>.json` each), with a copy per day and spare copies in `history/`.
+  Never put this data in git.
+
+```bash
+npm ci --omit=dev
+node server.js                       # http://127.0.0.1:3010  (PORT, DATA_DIR to change)
+node import-backup.js <backup.json> <email>   # load a backup file as someone's server copy
+DEV_USER=me@test.uk node server.js   # testing without Cloudflare in front
+```
+
+If two devices both changed things since they last matched, the app asks which
+copy to keep; the other one is kept in `history/`, so nothing is lost.
 
 ## Hosting (GitHub Pages)
 

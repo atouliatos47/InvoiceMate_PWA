@@ -78,14 +78,24 @@ async function renderSettings() {
           </div>`}
       </div>
 
-      <!-- Backup (js/backup.js) -->
+      <!-- Backup (js/backup.js). When the app runs from the home server,
+           js/sync.js also keeps a copy there — its status shows here. -->
       <div class="settings-section">
         <div class="settings-section-title">Backup</div>
-        <div class="settings-note">
-          Everything is stored on this device only. Save a backup file now and then and keep it
-          somewhere safe — email it to yourself or put it on Google Drive.<br>
-          Last backup: <strong>${Backup.lastBackupDate() ? fmtDate(Backup.lastBackupDate()) : 'never'}</strong>
-        </div>
+        ${Sync.hasServer() ? `
+          <div class="settings-note">
+            Your invoices are kept on this device and copied to your server after every change.
+            A backup file is an extra copy you can keep too.
+          </div>
+          <div class="settings-note sync-status" id="sync-status">${Sync.statusHtml()}</div>
+          <div class="settings-note">
+            Last backup file: <strong>${Backup.lastBackupDate() ? fmtDate(Backup.lastBackupDate()) : 'never'}</strong>
+          </div>` : `
+          <div class="settings-note">
+            Everything is stored on this device only. Save a backup file now and then and keep it
+            somewhere safe — email it to yourself or put it on Google Drive.<br>
+            Last backup: <strong>${Backup.lastBackupDate() ? fmtDate(Backup.lastBackupDate()) : 'never'}</strong>
+          </div>`}
         <div class="settings-actions">
           <button class="btn btn-outline btn-sm" onclick="Backup.export()">Save backup file</button>
           <button class="btn btn-ghost btn-sm" onclick="Backup.pickFile()">Restore from backup</button>

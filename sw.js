@@ -1,15 +1,16 @@
 /* ── Service worker: makes InvoiceMate work offline ───────
    On first visit it saves a copy of every file the app needs. After
    that the app opens from those saved copies — no internet needed, ever.
-   All the data lives on the device (js/api.js), so there are no server
-   calls left to worry about.
+   All the data lives on the device (js/api.js). The only server calls
+   are the copy on the home server (js/sync.js, api/…), which are never
+   answered from saved copies.
 
    TO SHIP AN UPDATE: change CACHE_NAME (e.g. v4 -> v5) AND APP_VERSION
    in js/app.js to match (it's shown on the start screen). The browser
    notices this file changed, downloads the new set of files, and throws
    the old set away. Without that bump, devices keep the old version.
 ──────────────────────────────────────────────────────────── */
-const CACHE_NAME = 'invoicemate-standalone-v18';   // v18: App Guide shows the new Tax Summary
+const CACHE_NAME = 'invoicemate-standalone-v19';   // v19: copy on the home server (js/sync.js)
 
 // Relative paths, so the app works from a sub-folder address such as
 // https://<user>.github.io/InvoiceMate_PWA/ as well as from a domain root.
@@ -29,6 +30,7 @@ const APP_FILES = [
   'js/access.js',
   'js/lock.js',
   'js/backup.js',
+  'js/sync.js',
   'js/settings.js',
   'js/clients.js',
   'js/invoices.js',
@@ -64,8 +66,10 @@ self.addEventListener('activate', e => {
 
 // Fetch — saved copy first, the network only for anything not saved.
 // ignoreSearch so 'index.html?source=pwa' still finds 'index.html'.
+// The server copy (api/…) always goes to the network, never to saved copies.
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  if (new URL(e.request.url).pathname.includes('/api/')) return;
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then(cached => cached || fetch(e.request))
   );
