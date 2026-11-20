@@ -10,7 +10,7 @@
    notices this file changed, downloads the new set of files, and throws
    the old set away. Without that bump, devices keep the old version.
 ──────────────────────────────────────────────────────────── */
-const CACHE_NAME = 'invoicemate-standalone-v19';   // v19: copy on the home server (js/sync.js)
+const CACHE_NAME = 'invoicemate-standalone-v20';   // v20: installable behind Cloudflare Access
 
 // Relative paths, so the app works from a sub-folder address such as
 // https://<user>.github.io/InvoiceMate_PWA/ as well as from a domain root.
