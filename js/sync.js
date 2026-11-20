@@ -22,7 +22,7 @@
    replaces (see server.js).
 ──────────────────────────────────────────────────────────── */
 
-const SYNC_KEY = 'invoicemate.sync';   // { rev, dirty, change_no, changed_at, last_ok }
+const SYNC_KEY = 'invoicemate.sync';   // { user, rev, dirty, change_no, changed_at, last_ok }
 
 const Sync = {
   // 'unknown'   — not asked the server yet
@@ -41,6 +41,7 @@ const Sync = {
   _lastTry: 0,
   _taking: false,
   _booting: false,
+  user: null,           // the email signed in (from Cloudflare, via the server)
   _toldSignedOut: false,
 
   /* ── Remembered state ─────────────────────────────────── */
@@ -135,7 +136,9 @@ const Sync = {
     if (this.mode === 'none' || this.mode === 'conflict') return;
     if (navigator.onLine === false) return this._setMode('offline');
     try {
-      const { json: server } = await this._call('GET', 'api/data');
+      // First a quick "who am I, and which copy is on the server?"
+      const { json: hello } = await this._call('GET', 'api/hello');
+      this.user = hello.user;
       // The server knows who this is (Cloudflare checked the email), so a
       // new tablet doesn't need the app's own invite code as well. It joins
       // as a 'guest': everything works, but there's no "Share InvoiceMate" —
@@ -147,9 +150,18 @@ const Sync = {
         if (typeof Lock !== 'undefined' && Lock._mode === 'access') Lock.showStart();
       }
 
-      const local = Store.load();
-      const s = this.state();
+      let s = this.state();
+      // A different person signed in on this device: what's here is the
+      // other person's (already on the server, under their email). This
+      // device now follows the person signed in.
+      if (s.user && s.user !== hello.user) return this._switchPerson(s, hello);
+      if (!s.user) s = this._setState({ user: hello.user });
 
+      const local = Store.load();
+      // Nothing new on either side — no need to download the whole copy.
+      if (hello.rev === s.rev && !s.dirty && (hello.rev === 0 || !this._isEmpty(local))) return this._ok(hello.rev);
+
+      const { json: server } = await this._call('GET', 'api/data');
       if (!server.data) {                                   // server has nothing yet
         if (this._isEmpty(local)) return this._ok(server.rev);
         return this._send(server.rev, false);
@@ -168,6 +180,22 @@ const Sync = {
     } catch (err) {
       this._failed(err);
     }
+  },
+
+  // Signed in as someone else than last time (e.g. Andreas's email was
+  // used on Sharon's tablet, then Sharon's): swap to the new person's copy,
+  // or to an empty app if they have none yet. The old person's data is
+  // already on the server under their own email — unless it had changes
+  // not sent yet; those are kept as a spare copy so nothing is lost.
+  async _switchPerson(s, hello) {
+    if (s.dirty) await this._call('POST', 'api/copy', { data: Store.load() });
+    const { json: server } = await this._call('GET', 'api/data');
+    this._setState({ user: hello.user, rev: null, dirty: false });
+    if (server.data) return this._take(server, true);
+    this._taking = true;
+    try { Store.replaceAll(defaultData()); } finally { this._taking = false; }
+    this._ok(server.rev);
+    await this._refreshScreens();
   },
 
   async _send(baseRev, force) {
@@ -289,6 +317,13 @@ const Sync = {
       this._setMode('conflict');
       showToast("Couldn't reach your server — try again in a moment", 'error');
     }
+  },
+
+  // Cloudflare's own sign-out page. Next time the app opens it shows
+  // "Sign in again", and the email typed then decides whose invoices load.
+  signOut() {
+    if (!window.confirm('Sign out of your server on this device?\n\nYour invoices stay saved. To get back in, tap "Sign in again" and type your email.')) return;
+    location.href = '/cdn-cgi/access/logout';
   },
 
   signIn() {

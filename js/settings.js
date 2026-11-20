@@ -88,6 +88,8 @@ async function renderSettings() {
             A backup file is an extra copy you can keep too.
           </div>
           <div class="settings-note sync-status" id="sync-status">${Sync.statusHtml()}</div>
+          ${Sync.user ? `<div class="settings-note">Signed in as <strong>${escHtml(Sync.user)}</strong>
+            · <button class="link-btn" onclick="Sync.signOut()">Sign out</button></div>` : ''}
           <div class="settings-note">
             Last backup file: <strong>${Backup.lastBackupDate() ? fmtDate(Backup.lastBackupDate()) : 'never'}</strong>
           </div>` : `
