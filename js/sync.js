@@ -80,7 +80,7 @@ const Sync = {
     // A brand-new (or reset) tablet waits a moment for its invoices, so
     // they're there on the very first screen. Others carry on at once.
     if (this._isEmpty(Store.load())) {
-      await Promise.race([first, new Promise(r => setTimeout(r, 6000))]);
+      await Promise.race([first, new Promise(r => setTimeout(r, 10000))]);
     }
     this._booting = false;
   },
@@ -140,7 +140,12 @@ const Sync = {
       // new tablet doesn't need the app's own invite code as well. It joins
       // as a 'guest': everything works, but there's no "Share InvoiceMate" —
       // a friend couldn't get into this private server anyway.
-      if (typeof Access !== 'undefined' && !Access.isActivated()) Access._set('guest');
+      if (typeof Access !== 'undefined' && !Access.isActivated()) {
+        Access._set('guest');
+        // If the server was slow to answer, the invite-code box may already
+        // be on screen: swap it for the normal start (Go button or PIN).
+        if (typeof Lock !== 'undefined' && Lock._mode === 'access') Lock.showStart();
+      }
 
       const local = Store.load();
       const s = this.state();
